@@ -326,9 +326,10 @@ class GameListManager(QAbstractListModel):
                 games = self._game_db_manager.all_games()
 
             def sort_key(game: Game):
-                return (
-                    game.lastPlayed if self._sort_by_recent else game.sortTitle.lower()
+                last_played = (
+                    game.lastPlayed if game.lastPlayed is not None else float("-inf")
                 )
+                return last_played if self._sort_by_recent else game.sortTitle.lower()
 
             if self._group_favourites:
                 favorites = [game for game in games if game.favourite]

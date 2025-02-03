@@ -130,7 +130,7 @@ class DetailsFrame(QScrollArea):
 
     def _create_release_year_section(self):
         """Create the release year section."""
-        self._release_year_label = QLabel("<h2>0000</h2>")
+        self._release_year_label = QLabel("<h2>Unkown</h2>")
         self._create_section(
             "Release",
             self._release_year_label,
