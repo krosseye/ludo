@@ -80,9 +80,9 @@ class GameDescriptionWidget(QScrollArea):
         self.cover_image_label.setAlignment(Qt.AlignCenter)
         self.cover_image_label.setFixedSize(CONFIG.VERTICAL_CAPSULE_SIZE)
         if CONFIG.PREFERS_DARK_MODE:
-            border_color = self.palette().button().color().lighter().name()
+            border_color = self.palette().midlight().color().name()
         else:
-            border_color = self.palette().button().color().darker().name()
+            border_color = self.palette().mid().color().name()
         self.cover_image_label.setStyleSheet(
             f"QLabel {{border: 1px solid {border_color};}}"
         )

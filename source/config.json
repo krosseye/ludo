@@ -12,6 +12,7 @@
   "COLLECTION_STYLE": "list",
   "LIST_STYLE": "icon",
   "GRID_STYLE": "capsule_wide",
+  "ALTERNATE_LIST_ROW_COLORS": false,
   "VERTICAL_CAPSULE_SIZE": [150, 225],
   "HORIZONTAL_CAPSULE_SIZE": [276, 129],
   "THEME": "auto",

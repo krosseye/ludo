@@ -55,6 +55,7 @@ class AppConfig:
     COLLECTION_STYLE: str = field(init=False)
     LIST_STYLE: str = field(init=False)
     GRID_STYLE: str = field(init=False)
+    ALTERNATE_LIST_ROW_COLORS: bool = field(init=False)
     SORT_FAVOURITES_FIRST: bool = field(init=False)
     SORT_BY_RECENTLY_PLAYED: bool = field(init=False)
 
@@ -119,6 +120,10 @@ class AppConfig:
             ).lower()
             if AppConfig.GRID_STYLE not in {"capsule", "capsule_wide", "icon"}:
                 raise ValueError
+
+            AppConfig.ALTERNATE_LIST_ROW_COLORS = self._config_file.get(
+                "ALTERNATE_LIST_ROW_COLORS", False
+            )
 
             AppConfig.SORT_FAVOURITES_FIRST = self._config_file.get(
                 "SORT_FAVOURITES_FIRST", False

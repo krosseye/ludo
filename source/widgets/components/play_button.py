@@ -71,15 +71,10 @@ class PlayButton(QFrame):
 
         prefers_dark = PREFERS_DARK_MODE
         palette = QPalette()
-        self.default_border_color = (
+        self._border_color = (
             palette.midlight().color().name()
             if prefers_dark
             else palette.mid().color().name()
-        )
-        self.highlighted_border_color = (
-            palette.highlight().color().darker().name()
-            if prefers_dark
-            else palette.highlight().color().lighter().name()
         )
         self.button_color = palette.button().color().name()
         self.highlighted_button_color = palette.highlight().color().name()
@@ -225,7 +220,7 @@ class PlayButton(QFrame):
             self.setStyleSheet(f"""
                 QFrame#PlayButton {{
                     background-color: {self.highlighted_button_color};
-                    border: 1px solid {self.default_border_color};
+                    border: 1px solid {self._border_color};
                     border-radius: 5px;
                 }}
                 QFrame#PlayButton QLabel {{
@@ -242,7 +237,7 @@ class PlayButton(QFrame):
                 self.setStyleSheet(f"""
                     QFrame#PlayButton {{
                         background-color: red;
-                        border: 1px solid {self.default_border_color};
+                        border: 1px solid {self._border_color};
                         border-radius: 5px;
                     }}
                     QFrame#PlayButton QLabel {{
@@ -258,7 +253,7 @@ class PlayButton(QFrame):
                 self.setStyleSheet(f"""
                     QFrame#PlayButton {{
                         background-color: {self.highlighted_button_color};
-                        border: 1px solid {self.default_border_color};
+                        border: 1px solid {self._border_color};
                         border-radius: 5px;
                     }}
                     QFrame#PlayButton QLabel {{
@@ -274,7 +269,7 @@ class PlayButton(QFrame):
                 self.setStyleSheet(f"""
                     QFrame#PlayButton {{
                         background-color: {self.button_color};
-                        border: 1px solid {self.default_border_color};
+                        border: 1px solid {self._border_color};
                         border-radius: 5px;
                     }}
                 """)

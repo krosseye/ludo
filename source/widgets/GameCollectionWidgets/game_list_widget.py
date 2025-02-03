@@ -19,7 +19,16 @@ import logging
 import os
 
 from models import AppConfig
-from PySide6.QtCore import QRunnable, QSize, Qt, QThreadPool, QTimer, Signal
+from PySide6.QtCore import (
+    QMutex,
+    QMutexLocker,
+    QRunnable,
+    QSize,
+    Qt,
+    QThreadPool,
+    QTimer,
+    Signal,
+)
 from PySide6.QtGui import QIcon, QKeyEvent
 from PySide6.QtWidgets import QFrame, QLabel, QListWidget, QListWidgetItem, QVBoxLayout
 from utilities.generators import IconPixmap
@@ -27,10 +36,15 @@ from utilities.generators import IconPixmap
 from .context_menu import GameEntryContextMenu
 
 CONFIG = AppConfig()
+
 GAMES_DIRECTORY = os.path.join(CONFIG.USER_DATA_PATH, "games")
+
 ICON_STYLE = CONFIG.LIST_STYLE
+ALTERNATE_LIST_ROW_COLORS = CONFIG.ALTERNATE_LIST_ROW_COLORS
+
 ITEM_SIZE = QSize(48, 48)
 ICON_SIZE = QSize(32, 32) if ICON_STYLE == "icon" else QSize(48, 32)
+
 SCROLL_DELAY = 200
 SEARCH_DELAY = 300
 
@@ -88,6 +102,7 @@ class GameListWidget(QListWidget):
         self._loaded_icons = set()
 
         self.thread_pool = QThreadPool()
+        self._loaded_icons_mutex = QMutex()
 
         self._search_debounce_timer = QTimer(self)
         self._search_debounce_timer.setSingleShot(True)
@@ -132,6 +147,7 @@ class GameListWidget(QListWidget):
     def _setup_layout(self):
         self.setIconSize(ICON_SIZE)
         self.setFrameShape(QFrame.NoFrame)
+        self.setAlternatingRowColors(ALTERNATE_LIST_ROW_COLORS)
 
         self.no_games_label = QLabel("<h2>No games found :(</h2>")
         self.no_games_label.setWordWrap(True)
@@ -186,14 +202,16 @@ class GameListWidget(QListWidget):
         """
 
         def _update_icon(game_id, icon):
-            for index in range(self.count()):
-                item = self.item(index)
-                game = item.data(Qt.UserRole)
-                if game and game.id == game_id:
-                    logger.debug(f"Icon generated for {game.title}")
-                    item.setIcon(icon)
-                    self._loaded_icons.add(game_id)
-                    break
+            with QMutexLocker(self._loaded_icons_mutex):  # Lock the mutex
+                if game_id not in self._loaded_icons:
+                    for index in range(self.count()):
+                        item = self.item(index)
+                        game = item.data(Qt.UserRole)
+                        if game and game.id == game_id:
+                            logger.debug(f"Icon generated for {game.title}")
+                            item.setIcon(icon)
+                            self._loaded_icons.add(game_id)
+                            break
 
         if len(self._loaded_icons) == self._game_list_manager.rowCount():
             return
@@ -285,8 +303,10 @@ class GameListWidget(QListWidget):
         """Remove items from the widget if their IDs are no longer in the game list."""
         for i in reversed(range(self.count())):
             item = self.item(i)
-            if item.data(Qt.UserRole).id not in current_game_ids:
+            game_id = item.data(Qt.UserRole).id
+            if game_id not in current_game_ids:
                 self.takeItem(i)
+                self._loaded_icons.remove(game_id)
 
     def _reorder_and_update_item(self, existing_item, game, new_index):
         """Reorder an existing item and update its properties if necessary."""
@@ -299,7 +319,7 @@ class GameListWidget(QListWidget):
         if existing_game.title != game.title:
             existing_item.setText(game.title)
             existing_game.title = game.title
-            existing_item.setIcon(create_icon(existing_game))
+            self._loaded_icons.remove(game.id)
 
     def _add_new_game_item(self, game, new_index):
         """Add a new game to the widget."""
