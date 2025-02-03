@@ -1,0 +1,21 @@
+{
+  "APP_TITLE": "Ludo",
+  "APP_VERSION": "0.1.0",
+  "DEVELOPER": "Killian W",
+  "GITHUB_URL": "https://github.com/killian-w/ludo",
+  "DEV_MODE": true,
+  "PORTABLE": true,
+  "KICKBACK_MODE": false,
+  "BASE_FONT_SIZE": 9,
+  "SPLASH_ENABLED": true,
+  "STEAM_FRIENDS_ENABLED": true,
+  "COLLECTION_STYLE": "list",
+  "LIST_STYLE": "icon",
+  "GRID_STYLE": "capsule_wide",
+  "VERTICAL_CAPSULE_SIZE": [150, 225],
+  "HORIZONTAL_CAPSULE_SIZE": [276, 129],
+  "THEME": "auto",
+  "SORT_FAVOURITES_FIRST": false,
+  "SORT_BY_RECENTLY_PLAYED": true,
+  "LAUNCH_PROCESS_DETACHED": false
+}
