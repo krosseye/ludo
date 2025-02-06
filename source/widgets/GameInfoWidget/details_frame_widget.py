@@ -18,9 +18,8 @@
 import os
 
 from models import AppConfig
-from PySide6.QtGui import QIcon, QPalette
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
-    QFrame,
     QHBoxLayout,
     QLabel,
     QScrollArea,
@@ -184,7 +183,7 @@ class DetailsFrame(QScrollArea):
         """Helper method to set a developer or publisher name with optional link."""
         if name.lower() != "unknown":
             label.setText(
-                f'<h2><a style="color: {QPalette().text().color().name()};" '
+                f'<h2><a style="color: {self.palette().text().color().name()};" '
                 f'href="https://www.wikipedia.org/wiki/Special:Search?search={name}" '
                 f'target="_blank">{name}</a></h2>'
             )

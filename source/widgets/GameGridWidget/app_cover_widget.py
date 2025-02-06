@@ -24,7 +24,7 @@ from PySide6.QtCore import (
     Qt,
     Signal,
 )
-from PySide6.QtGui import QColor, QPalette, QPixmap
+from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QLabel, QVBoxLayout
 from utilities.generators.generate_graphic import CoverPixmap
 
@@ -73,8 +73,8 @@ class AppLauncherCover(QFrame):
 
         self.heart_spritesheet = QPixmap(HEART_SPRITE_PATH)
         self.prefers_dark = PREFERS_DARK_MODE
-        self.highlight_border_color = QPalette().highlight().color().name()
-        self.button_color = QPalette().button().color()
+        self.highlight_border_color = self.palette().highlight().color().name()
+        self.button_color = self.palette().button().color()
         self.button_color.setAlpha(int(255 * 0.75))
         self.default_border_color = self._get_default_border_color()
 
@@ -165,7 +165,7 @@ class AppLauncherCover(QFrame):
         self.right_click.emit()
 
     def _get_default_border_color(self) -> str:
-        button_color = QPalette().button().color()
+        button_color = self.palette().button().color()
         return (
             button_color.lighter().name()
             if self.prefers_dark
@@ -240,6 +240,7 @@ class AppLauncherCover(QFrame):
         self.circle_label.move(self.width() - size - 8, 7)
 
         self.heart_label = QLabel(self)
+        self.heart_label.setStyleSheet("background-color: transparent;")
         self.heart_label.setFixedSize(24, 24)
         self.heart_label.setPixmap(
             self.heart_spritesheet.copy(384, 0, 192, 192).scaled(
@@ -273,7 +274,7 @@ class AppLauncherCover(QFrame):
 
     def _apply_highlight_style(self, border_color: str, border_size: int = 1):
         self.cover_graphic.setStyleSheet(
-            f"border: {border_size}px solid {border_color};background-color:{QPalette().button().color().name()};"
+            f"border: {border_size}px solid {border_color}; background-color:{self.palette().button().color().name()};"
         )
 
     def _show_ui_elements(self):

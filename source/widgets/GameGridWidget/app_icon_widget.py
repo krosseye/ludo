@@ -17,8 +17,8 @@ import os
 from typing import Any
 
 from models import AppConfig
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRect, Qt, Signal
-from PySide6.QtGui import QIcon, QPainter, QPalette, QPixmap
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, Signal
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QFrame,
     QGraphicsDropShadowEffect,
@@ -55,6 +55,14 @@ class AppLauncherIcon(QFrame):
         self.game_id: str = game_id
         self.is_favourite: bool = is_favourite
 
+        self.button_color = self.palette().button().color().name()
+        self.highlight_border_color = self.palette().highlight().color().name()
+        self.default_border_color = (
+            self.palette().button().color().lighter().name()
+            if CONFIG.PREFERS_DARK_MODE
+            else self.palette().button().color().darker().name()
+        )
+
         self._init_ui(title, icon_path)
         self._setup_blur_animation()
         self.selected = self._selected
@@ -72,6 +80,7 @@ class AppLauncherIcon(QFrame):
         layout = QVBoxLayout()
         layout.setContentsMargins(5, 5, 5, 5)
         widget.setLayout(layout)
+        widget.setStyleSheet("background-color: transparent;")
 
         # Truncate the title if it's longer than 24 characters
         self.truncated_title: str = title if len(title) <= 24 else title[:24] + "..."
@@ -100,15 +109,29 @@ class AppLauncherIcon(QFrame):
         self.setFrameShape(QFrame.StyledPanel)
 
         self.heart_spritesheet = QPixmap(
-            os.path.join(CONFIG.RESOURCE_PATH, "icons", "heart_spritesheet.png")
+            os.path.join(
+                CONFIG.RESOURCE_PATH, "icons", "spritesheet", "heart_spritesheet.png"
+            )
         )
+
+        self.heart_label = QLabel(self)
+        self.heart_label.setStyleSheet("background-color: transparent;")
+        self.heart_label.setFixedSize(24, 24)
+        self.heart_label.setPixmap(
+            self.heart_spritesheet.copy(384, 0, 192, 192).scaled(
+                24, 24, Qt.KeepAspectRatio
+            )
+        )
+
+        self.heart_label.move(self.width() - self.heart_label.width() - 5, 5)
+        self.heart_label.setVisible(self.is_favourite)
 
     def _setup_blur_animation(self) -> None:
         """Set up the drop shadow effect and blur radius animation."""
         self.shadow_effect = QGraphicsDropShadowEffect(self)
         self.shadow_effect.setOffset(0, 0)
         self.shadow_effect.setBlurRadius(0)
-        self.shadow_effect.setColor(QPalette().highlight().color())
+        self.shadow_effect.setColor(self.palette().highlight().color())
         self.setGraphicsEffect(self.shadow_effect)
 
         self.blur_animation = QPropertyAnimation(self.shadow_effect, b"blurRadius")
@@ -158,34 +181,6 @@ class AppLauncherIcon(QFrame):
         self.clicked.emit()
         super().mousePressEvent(event)
 
-    def paintEvent(self, event) -> None:
-        """Custom paint event to draw the heart graphic."""
-        super().paintEvent(event)
-
-        if self.is_favourite and not self.heart_spritesheet.isNull():
-            painter = QPainter(self)
-            padding = 5
-
-            # Define the rectangle for the third heart in the spritesheet
-            heart_width = 192
-            heart_height = 192
-            heart_rect = QRect(heart_width * 2, 0, heart_width, heart_height)
-
-            scale = 24
-
-            painter.drawPixmap(
-                self.width() - scale - padding,
-                padding,
-                scale,
-                scale,
-                self.heart_spritesheet,
-                heart_rect.x(),
-                heart_rect.y(),
-                heart_rect.width(),
-                heart_rect.height(),
-            )
-            painter.end()
-
     def _show_context_menu(self, pos: Any) -> None:
         """Emit the right-click signal to show the context menu."""
         self.right_click.emit()
@@ -194,8 +189,8 @@ class AppLauncherIcon(QFrame):
         """Highlight the button with a different background color and an outline."""
         self.setStyleSheet(f"""
             AppLauncherIcon{{
-                background-color: {QPalette().toolTipBase().color().lighter().name()};
-                border: 2px solid {QPalette().highlight().color().name()}; border-radius:5px;
+                background-color: {self.palette().toolTipBase().color().lighter().name()};
+                border: 2px solid {self.highlight_border_color}; border-radius:5px;
                 padding:-1px;
             }}                   
             """)
@@ -204,8 +199,8 @@ class AppLauncherIcon(QFrame):
         """Reset the button's background color and remove the outline."""
         self.setStyleSheet(
             f"""AppLauncherIcon{{
-                background-color: {QPalette().button().color().name()};
-                border: 1px solid {QPalette().button().color().lighter().name()};border-radius:5px;
+                background-color: {self.button_color};
+                border: 1px solid {self.default_border_color}; border-radius:5px;
                 }}
                 """
         )

@@ -21,7 +21,7 @@ from datetime import datetime
 
 from models import AppConfig
 from PySide6.QtCore import QProcess, QSize, Qt, Signal
-from PySide6.QtGui import QIcon, QPalette, QPixmap
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QMessageBox
 
 CONFIG = AppConfig()
@@ -45,7 +45,7 @@ class PlayButton(QFrame):
         self._game_list_manager = game_list_manager
 
         self._processes = {}
-        self._max_start_time = 1
+        self._max_start_time = 5
 
         self._play_icon = QIcon(
             os.path.join(CONFIG.RESOURCE_PATH, "icons", "dark", "filled", "play.png")
@@ -58,9 +58,7 @@ class PlayButton(QFrame):
         # Layout
         layout = QHBoxLayout()
         self.icon_label = QLabel()
-
         self.label = QLabel()
-        self.label.setStyleSheet("QLabel{font-weight:bold;}")
 
         layout.addStretch()
         layout.addWidget(self.icon_label)
@@ -70,7 +68,7 @@ class PlayButton(QFrame):
         self.setLayout(layout)
 
         prefers_dark = PREFERS_DARK_MODE
-        palette = QPalette()
+        palette = self.palette()
         self._border_color = (
             palette.midlight().color().name()
             if prefers_dark
@@ -171,13 +169,14 @@ class PlayButton(QFrame):
         exit_status = process.exitStatus()
         exit_code = process.exitCode()
 
-        print(f"Process for {self.title} finished. Duration: {process_duration:.2f}s")
-
         if exit_status == QProcess.NormalExit and exit_code == 0:
-            print(f"Process for {self.title} finished successfully.")
-            if process_duration < self._max_start_time:
+            if not process_duration < self._max_start_time:
                 print(
-                    f"Process for {self.title} finished too quickly, assuming external launcher."
+                    f"Process for {self.title} finished successfully. Duration: {process_duration:.2f}s"
+                )
+            else:
+                print(
+                    f"Process for {self.title} finished too quickly ({process_duration:.2f}s), assuming external launcher."
                 )
         else:
             print(
@@ -210,69 +209,54 @@ class PlayButton(QFrame):
 
     def _update_state(self, enabled, running):
         """Update the button's appearance based on the state."""
-        if DETACHED_MODE and enabled:
-            # In detached mode, don't show the "Stop" button
-            self.icon_label.setPixmap(self._play_icon)
-            self.icon_label.setVisible(True)
-            self.label.setText("Play")
-            self.setCursor(Qt.PointingHandCursor)
-            self.setToolTip(f"Play {self.title}.")
-            self.setStyleSheet(f"""
-                QFrame#PlayButton {{
-                    background-color: {self.highlighted_button_color};
-                    border: 1px solid {self._border_color};
-                    border-radius: 5px;
-                }}
-                QFrame#PlayButton QLabel {{
-                        color: white;
-                    }}
-            """)
+        play_mode = enabled and not (DETACHED_MODE and enabled)
+        stop_mode = not DETACHED_MODE and running
+
+        if stop_mode:
+            icon, text, tooltip, bg_color = (
+                self._dismiss_icon,
+                "Stop",
+                f"Stop {self.title}.",
+                "red",
+            )
+        elif play_mode:
+            icon, text, tooltip, bg_color = (
+                self._play_icon,
+                "Play",
+                f"Play {self.title}.",
+                self.highlighted_button_color,
+            )
         else:
-            if running:
-                self.icon_label.setPixmap(self._dismiss_icon)
-                self.icon_label.setVisible(True)
-                self.label.setText("Stop")
-                self.setCursor(Qt.PointingHandCursor)
-                self.setToolTip(f"Stop {self.title}.")
-                self.setStyleSheet(f"""
-                    QFrame#PlayButton {{
-                        background-color: red;
-                        border: 1px solid {self._border_color};
-                        border-radius: 5px;
-                    }}
-                    QFrame#PlayButton QLabel {{
-                        color: white;
-                    }}
-                """)
-            elif enabled:
-                self.icon_label.setPixmap(self._play_icon)
-                self.icon_label.setVisible(True)
-                self.label.setText("Play")
-                self.setCursor(Qt.PointingHandCursor)
-                self.setToolTip(f"Play {self.title}.")
-                self.setStyleSheet(f"""
-                    QFrame#PlayButton {{
-                        background-color: {self.highlighted_button_color};
-                        border: 1px solid {self._border_color};
-                        border-radius: 5px;
-                    }}
-                    QFrame#PlayButton QLabel {{
-                        color: white;
-                    }}
-                """)
-            else:
-                self.icon_label.setPixmap(QPixmap())
-                self.icon_label.setVisible(False)
-                self.label.setText("Play")
-                self.setCursor(Qt.ArrowCursor)
-                self.setToolTip(f"{self.title} is not ready.")
-                self.setStyleSheet(f"""
-                    QFrame#PlayButton {{
-                        background-color: {self.button_color};
-                        border: 1px solid {self._border_color};
-                        border-radius: 5px;
-                    }}
-                """)
+            icon, text, tooltip, bg_color = (
+                QPixmap(),
+                "Play",
+                f"{self.title} is not ready.",
+                self.button_color,
+            )
+
+        self.icon_label.setPixmap(icon)
+        self.icon_label.setVisible(bool(icon))
+        self.label.setText(text)
+        self.setCursor(
+            Qt.PointingHandCursor if play_mode or stop_mode else Qt.ArrowCursor
+        )
+        self.setToolTip(tooltip)
+
+        text_color = (
+            "white" if play_mode or stop_mode else self.palette().text().color().name()
+        )
+        self.setStyleSheet(f"""
+            QFrame#PlayButton {{
+                background-color: {bg_color};
+                border: 1px solid {self._border_color};
+                border-radius: 5px;
+            }}
+            QFrame#PlayButton QLabel {{
+                font-weight:bold;
+                color: {text_color};
+                background-color: transparent;
+            }}
+        """)
 
     def update_game_info(self, game_info):
         """Update game information and the button state."""

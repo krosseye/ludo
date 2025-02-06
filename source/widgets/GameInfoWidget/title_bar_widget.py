@@ -32,7 +32,6 @@ class TitleBar(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFrameShape(QFrame.StyledPanel)
-        self.setContentsMargins(0, 0, 0, 0)
 
         layout = QHBoxLayout()
         self.setLayout(layout)
