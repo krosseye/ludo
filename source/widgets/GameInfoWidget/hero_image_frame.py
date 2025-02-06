@@ -25,13 +25,13 @@ from PySide6.QtGui import (
     QImage,
     QPainter,
     QPainterPath,
-    QPalette,
     QPen,
 )
 from PySide6.QtWidgets import QFrame, QWidget
 
 CONFIG = AppConfig()
 PREFERS_DARK = CONFIG.PREFERS_DARK_MODE
+LOGO_POSITION_IN_HERO = CONFIG.LOGO_POSITION_IN_HERO
 
 
 class HeroImageFrame(QFrame):
@@ -42,15 +42,18 @@ class HeroImageFrame(QFrame):
         self._main_image: QImage = QImage()
         self._logo_image: QImage = QImage()
         self._logo_text: Optional[str] = None
+        self._logo_position = LOGO_POSITION_IN_HERO
         self.setFrameShape(QFrame.NoFrame)
 
     def set_hero_image(self, image_path: str) -> None:
         """Load and set the hero image from the given file path."""
         self._load_image(image_path, is_logo=False)
 
-    def set_logo_image(self, logo_path: str) -> None:
+    def set_logo_image(self, logo_path: str, position: Optional[str] = None) -> None:
         """Load and set the logo image from the given file path."""
         self._logo_text = None
+        if position:
+            self._logo_position = position
         self._load_image(logo_path, is_logo=True)
 
     def set_logo_text(self, text: str) -> None:
@@ -97,9 +100,9 @@ class HeroImageFrame(QFrame):
         """Draw a border with rounded corners around the frame."""
 
         pen = (
-            QPen(QPalette().midlight().color(), 1)
+            QPen(self.palette().midlight().color(), 1)
             if PREFERS_DARK
-            else QPen(QPalette().mid().color(), 1)
+            else QPen(self.palette().mid().color(), 1)
         )
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
@@ -116,11 +119,26 @@ class HeroImageFrame(QFrame):
         self._draw_scaled_image(painter, self._main_image, rect)
 
     def _draw_logo_image(self, painter: QPainter) -> None:
-        """Draw the logo image centered within the frame."""
+        """Draw the logo image in the specified position within the frame."""
         max_width, max_height = self.width() * 0.5, self.height() * 0.5
         scaled_size = self._get_scaled_size(self._logo_image, max_width, max_height)
-        x = (self.width() - scaled_size[0]) // 2
-        y = (self.height() - scaled_size[1]) // 2
+
+        if self._logo_position == "NORTH":
+            x = (self.width() - scaled_size[0]) // 2
+            y = 25  # Padding from top
+        elif self._logo_position == "SOUTH":
+            x = (self.width() - scaled_size[0]) // 2
+            y = self.height() - scaled_size[1] - 25  # Padding from bottom
+        elif self._logo_position == "EAST":
+            x = self.width() - scaled_size[0] - 25  # Padding from right
+            y = (self.height() - scaled_size[1]) // 2
+        elif self._logo_position == "WEST":
+            x = 25  # Padding from left
+            y = (self.height() - scaled_size[1]) // 2
+        else:  # Default is CENTER
+            x = (self.width() - scaled_size[0]) // 2
+            y = (self.height() - scaled_size[1]) // 2
+
         painter.drawImage(QRect(x, y, *scaled_size), self._logo_image)
 
     def _draw_logo_text(self, painter: QPainter) -> None:

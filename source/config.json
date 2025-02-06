@@ -18,5 +18,6 @@
   "THEME": "auto",
   "SORT_FAVOURITES_FIRST": false,
   "SORT_BY_RECENTLY_PLAYED": true,
-  "LAUNCH_PROCESS_DETACHED": false
+  "LAUNCH_PROCESS_DETACHED": false,
+  "LOGO_POSITION_IN_HERO": "center"
 }

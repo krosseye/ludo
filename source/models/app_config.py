@@ -61,6 +61,7 @@ class AppConfig:
 
     PREFERS_DARK_MODE: bool = darkdetect.isDark()
     THEME: str = field(init=False)
+    LOGO_POSITION_IN_HERO: str = field(init=False)
     LAUNCH_PROCESS_DETACHED: bool = field(init=False)
 
     RESOURCE_PATH: str = field(init=False)
@@ -148,6 +149,18 @@ class AppConfig:
             }
 
             AppConfig.THEME = self._config_file.get("THEME", "auto")
+            AppConfig.LOGO_POSITION_IN_HERO = self._config_file.get(
+                "LOGO_POSITION_IN_HERO", "center"
+            ).upper()
+            if AppConfig.LOGO_POSITION_IN_HERO not in {
+                "NORTH",
+                "SOUTH",
+                "EAST",
+                "WEST",
+                "CENTER",
+            }:
+                raise ValueError
+
             AppConfig.LAUNCH_PROCESS_DETACHED = self._config_file.get(
                 "LAUNCH_PROCESS_DETACHED", False
             )
