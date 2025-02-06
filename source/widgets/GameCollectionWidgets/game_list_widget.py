@@ -22,18 +22,27 @@ from models import AppConfig
 from PySide6.QtCore import (
     QMutex,
     QMutexLocker,
+    QObject,
     QRunnable,
     QSize,
     Qt,
     QThreadPool,
     QTimer,
     Signal,
+    Slot,
 )
-from PySide6.QtGui import QIcon, QKeyEvent
-from PySide6.QtWidgets import QFrame, QLabel, QListWidget, QListWidgetItem, QVBoxLayout
+from PySide6.QtGui import QIcon, QKeyEvent, QPixmap
+from PySide6.QtWidgets import (
+    QFrame,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QVBoxLayout,
+)
 from utilities.generators import IconPixmap
 
 from .context_menu import GameEntryContextMenu
+from .list_item_widget import ListItemWidget
 
 CONFIG = AppConfig()
 
@@ -52,40 +61,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(CONFIG.DEBUG_LEVELS["GameListWidget"])
 
 
-def create_icon(game):
-    """
-    Create or load an icon for a given game.
-
-    Args:
-        game: The game object for which to create/load an icon.
-
-    Returns:
-        QIcon: The icon representing the game.
-    """
-    try:
-        icon_base_path = os.path.join(GAMES_DIRECTORY, game.id)
-        icon_path = None
-
-        for ext in ["png", "jpg", "jpeg", "ico"]:
-            potential_icon_path = f"{icon_base_path}/{ICON_STYLE}.{ext}"
-            if os.path.exists(potential_icon_path):
-                icon_path = potential_icon_path
-                break
-
-        if not icon_path:
-            icon_path = IconPixmap(
-                title=game.title, width=ICON_SIZE.width(), height=ICON_SIZE.height()
-            )
-
-        icon = QIcon(icon_path)
-        logger.debug("Created icon for game: %s (ID: %s)", game.title, game.id)
-        return icon
-
-    except Exception as e:
-        logger.error(f"Error creating icon for {game.title}: {e}")
-        return QIcon()
-
-
 class GameListWidget(QListWidget):
     """
     A custom list widget that manages and displays the list from the game list manager.
@@ -99,10 +74,10 @@ class GameListWidget(QListWidget):
 
         self._game_list_manager = game_list_manager
         self._current_games = None
-        self._loaded_icons = set()
+        self._loaded_widgets = set()
 
         self.thread_pool = QThreadPool()
-        self._loaded_icons_mutex = QMutex()
+        self._loaded_widgets_mutex = QMutex()
 
         self._search_debounce_timer = QTimer(self)
         self._search_debounce_timer.setSingleShot(True)
@@ -148,6 +123,7 @@ class GameListWidget(QListWidget):
         self.setIconSize(ICON_SIZE)
         self.setFrameShape(QFrame.NoFrame)
         self.setAlternatingRowColors(ALTERNATE_LIST_ROW_COLORS)
+        self.setStyleSheet("GameListWidget{background-color: transparent;}")
 
         self.no_games_label = QLabel("<h2>No games found :(</h2>")
         self.no_games_label.setWordWrap(True)
@@ -198,22 +174,10 @@ class GameListWidget(QListWidget):
 
     def _load_visible_icons(self):
         """
-        Load icons for the items currently visible in the viewport asynchronously.
+        Load widgets for the items currently visible in the viewport.
         """
 
-        def _update_icon(game_id, icon):
-            with QMutexLocker(self._loaded_icons_mutex):  # Lock the mutex
-                if game_id not in self._loaded_icons:
-                    for index in range(self.count()):
-                        item = self.item(index)
-                        game = item.data(Qt.UserRole)
-                        if game and game.id == game_id:
-                            logger.debug(f"Icon generated for {game.title}")
-                            item.setIcon(icon)
-                            self._loaded_icons.add(game_id)
-                            break
-
-        if len(self._loaded_icons) == self._game_list_manager.rowCount():
+        if len(self._loaded_widgets) == self._game_list_manager.rowCount():
             return
 
         viewport_rect = self.viewport().rect()
@@ -225,12 +189,30 @@ class GameListWidget(QListWidget):
 
         for item in visible_items:
             game = item.data(Qt.UserRole)
-            if game and game.id not in self._loaded_icons:
-                worker = IconLoaderWorker(
-                    game=game,
-                    callback=_update_icon,
-                )
+            item.setText("")
+            if game and game.id not in self._loaded_widgets:
+                worker = WidgetLoaderWorker(game.id, self._game_list_manager)
+                worker.widget_ready.connect(self._set_item_widget)
                 self.thread_pool.start(worker)
+
+    @Slot(str, QPixmap, str, bool)
+    def _set_item_widget(self, game_id, icon, title, is_favourite):
+        with QMutexLocker(self._loaded_widgets_mutex):
+            if game_id not in self._loaded_widgets:
+                for index in range(self.count()):
+                    item = self.item(index)
+                    game = item.data(Qt.UserRole)
+                    if game and game.id == game_id:
+                        logger.debug(f"Widget created for {game.title}")
+
+                        widget = ListItemWidget(
+                            icon=icon,
+                            text=title,
+                            is_favourite=is_favourite,
+                        )
+                        self.setItemWidget(item, widget)
+                        self._loaded_widgets.add(game_id)
+                        break
 
     def _refresh(self):
         """
@@ -250,7 +232,7 @@ class GameListWidget(QListWidget):
             games = filtered_games
 
         # Skip if no changes in content or order
-        if self._current_games == games:
+        if self._current_games is games:
             return
 
         self.setUpdatesEnabled(False)
@@ -264,9 +246,9 @@ class GameListWidget(QListWidget):
                 for item in (self.item(i) for i in range(self.count()))
             }
 
-            # Update _loaded_icons dynamically
+            # Update _loaded_widgets dynamically
             existing_ids = set(id_to_item_map.keys())
-            self._loaded_icons.intersection_update(existing_ids)
+            self._loaded_widgets.intersection_update(existing_ids)
 
             # Remove games no longer in the list
             current_game_ids = {game.id for game in games}
@@ -306,7 +288,7 @@ class GameListWidget(QListWidget):
             game_id = item.data(Qt.UserRole).id
             if game_id not in current_game_ids:
                 self.takeItem(i)
-                self._loaded_icons.remove(game_id)
+                self._loaded_widgets.discard(game_id)
 
     def _reorder_and_update_item(self, existing_item, game, new_index):
         """Reorder an existing item and update its properties if necessary."""
@@ -316,15 +298,13 @@ class GameListWidget(QListWidget):
             self.insertItem(new_index, existing_item)
 
         existing_game = existing_item.data(Qt.UserRole)
-        if existing_game.title != game.title:
-            existing_item.setText(game.title)
-            existing_game.title = game.title
-            self._loaded_icons.remove(game.id)
+        existing_item.setText(game.title)
+        existing_game.title = game.title
+        self._loaded_widgets.discard(game.id)
 
     def _add_new_game_item(self, game, new_index):
         """Add a new game to the widget."""
         item = QListWidgetItem(game.title)
-        item.setIcon(QIcon())
         item.setData(Qt.UserRole, game)
         item.setSizeHint(ITEM_SIZE)
         self.insertItem(new_index, item)
@@ -382,16 +362,54 @@ class GameListWidget(QListWidget):
         logger.debug("Scroll event processed, debounce timer started.")
 
 
-class IconLoaderWorker(QRunnable):
+class WidgetLoaderWorker(QRunnable, QObject):
     """
-    A worker class to load game icons asynchronously.
+    A worker class to load game widgets asynchronously.
     """
 
-    def __init__(self, game, callback):
+    widget_ready = Signal(str, QPixmap, str, bool)
+
+    def __init__(self, game_id, game_list_manager):
         super().__init__()
-        self.game = game
-        self.callback = callback
+        QObject.__init__(self)
+        self.game_id = game_id
+        self.game_list_manager = game_list_manager
 
     def run(self):
-        icon = create_icon(self.game)
-        self.callback(self.game.id, icon)
+        game = self.game_list_manager.find_game_by_id(self.game_id)
+        icon = self.create_icon(game).pixmap(ICON_SIZE)
+        self.widget_ready.emit(game.id, icon, game.title, game.favourite)
+
+    @staticmethod
+    def create_icon(game):
+        """
+        Create or load an icon for a given game.
+
+        Args:
+            game: The game object for which to create/load an icon.
+
+        Returns:
+            QIcon: The icon representing the game.
+        """
+        try:
+            icon_base_path = os.path.join(GAMES_DIRECTORY, game.id)
+            icon_path = None
+
+            for ext in ["png", "jpg", "jpeg", "ico"]:
+                potential_icon_path = f"{icon_base_path}/{ICON_STYLE}.{ext}"
+                if os.path.exists(potential_icon_path):
+                    icon_path = potential_icon_path
+                    break
+
+            if not icon_path:
+                icon_path = IconPixmap(
+                    title=game.title, width=ICON_SIZE.width(), height=ICON_SIZE.height()
+                )
+
+            icon = QIcon(icon_path)
+            logger.debug("Created icon for game: %s (ID: %s)", game.title, game.id)
+            return icon
+
+        except Exception as e:
+            logger.error(f"Error creating icon for {game.title}: {e}")
+            return QIcon()
