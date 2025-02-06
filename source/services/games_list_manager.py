@@ -137,7 +137,7 @@ class GameListManager(QAbstractListModel):
     def group_favourites(self, value: bool) -> None:
         try:
             self._group_favourites = value
-            self._apply_sorting(self._games)
+            self._load_games()
             logger.debug(f"Group favourites toggled (now: {self._group_favourites})")
         except Exception as e:
             logger.error(f"Error toggling favourites group: {str(e)}")
