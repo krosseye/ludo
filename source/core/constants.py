@@ -35,3 +35,8 @@ DEFAULT_USER_CONFIG = {
     "SORT_FAVOURITES_FIRST": False,
     "KICKBACK_MODE": False,
 }
+LOGO_POSITION_IN_HERO_OPTIONS = ["north", "south", "east", "west", "center"]
+THEME_OPTIONS = ["auto", "fusion"]
+COLLECTION_STYLE_OPTIONS = ["list", "grid"]
+LIST_STYLE_OPTIONS = ["icon", "logo"]
+GRID_STYLE_OPTIONS = ["capsule", "capsule_wide", "icon"]

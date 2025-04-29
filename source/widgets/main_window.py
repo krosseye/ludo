@@ -23,6 +23,7 @@ from core.app_config import app_config
 from core.services import GameDatabaseManager, GameListManager
 from dialogs.about_dialog import AboutDialog
 from dialogs.GameEntryDialog import GameEntryDialog
+from dialogs.settings_dialog import SettingsDialog
 from dialogs.system_info_dialog import SystemInfoDialog
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QGuiApplication, QIcon
@@ -109,6 +110,10 @@ class MainWindow(QMainWindow):
         )
         file_menu.addAction(
             self._create_action("Edit &Current Game...", self._edit_current_game)
+        )
+        file_menu.addSeparator()
+        file_menu.addAction(
+            self._create_action("&Settings", self._open_settings_dialog)
         )
         file_menu.addSeparator()
         file_menu.addAction(self._create_action("&Exit", self.close))
@@ -234,6 +239,16 @@ class MainWindow(QMainWindow):
     def _open_game_dialog(self, game_id=None):
         """Open the Add Game Dialog."""
         dialog = GameEntryDialog(self.game_list, game_id=game_id, parent=self)
+        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
+        dialog_geometry = dialog.geometry()
+        dialog_x = (screen_geometry.width() - dialog_geometry.width()) // 2
+        dialog_y = (screen_geometry.height() - dialog_geometry.height()) // 2
+
+        dialog.move(dialog_x, dialog_y)
+        dialog.exec()
+
+    def _open_settings_dialog(self):
+        dialog = SettingsDialog()
         screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
         dialog_geometry = dialog.geometry()
         dialog_x = (screen_geometry.width() - dialog_geometry.width()) // 2
