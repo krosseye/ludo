@@ -18,7 +18,9 @@
 import os
 from typing import Any, Optional, Union
 
-from models import AppConfig, Game
+from core.app_config import app_config
+from core.models import Game
+from core.services import GameListManager
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import (
@@ -30,14 +32,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from services import GameListManager
 from widgets.GameCollectionWidgets.context_menu import GameEntryContextMenu
 from widgets.GameCollectionWidgets.search_input import SearchBarWidget
 
 from .app_cover_widget import AppLauncherCover
 from .app_icon_widget import AppLauncherIcon
 
-CONFIG = AppConfig()
+CONFIG = app_config
 
 VERTICAL_CAPSULE_SIZE = CONFIG.VERTICAL_CAPSULE_SIZE
 HORIZONTAL_CAPSULE_SIZE = CONFIG.HORIZONTAL_CAPSULE_SIZE

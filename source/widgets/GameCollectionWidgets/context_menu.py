@@ -18,10 +18,10 @@
 import os
 from typing import Optional
 
+from core.services import GameListManager
 from dialogs.GameEntryDialog import GameEntryDialog
 from PySide6.QtGui import QCursor, QGuiApplication, QIcon
 from PySide6.QtWidgets import QMenu, QWidgetAction
-from services import GameListManager
 from widgets.components.play_button import PlayButton
 
 
@@ -59,7 +59,9 @@ class GameEntryContextMenu(QMenu):
         favourite_action = self.addAction("Add to &Favourites")
         favourite_action.setIcon(QIcon.fromTheme("emblem-favorite"))
         favourite_action.triggered.connect(
-            lambda: self.game_list.mark_as_favourite(game_id, not is_favourite)
+            lambda: self.game_list.game_manager.mark_as_favourite(
+                game_id, not is_favourite
+            )
         )
 
         favourite_action.setText(
@@ -113,9 +115,7 @@ class GameEntryContextMenu(QMenu):
         """Open the GameEntryDialog to modify the selected game's details."""
         game_info = self.game_list.find_game_by_id(game_id)
         if game_info:
-            modify_dialog = GameEntryDialog(
-                self.game_list, game_id=game_id, parent=self
-            )
+            modify_dialog = GameEntryDialog(self.game_list, game_id=game_id)
 
             screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
             dialog_geometry = modify_dialog.geometry()

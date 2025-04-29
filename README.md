@@ -8,9 +8,9 @@
 
 ## To-Do
 
-- [ ] Architect plugin API (not completed)
-- [ ] SteamGridDB integration (not completed)
-- [ ] WINE/Proton support for Linux (not completed)
+- [ ] Architect plugin API 🚧 *(in progress)*
+- [ ] SteamGridDB integration
+- [ ] WINE/Proton support for Linux
 
 ## Important Notice
 

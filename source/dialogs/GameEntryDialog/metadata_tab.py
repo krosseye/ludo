@@ -33,6 +33,7 @@ from PySide6.QtWidgets import (
 class MetadataTab(QWidget):
     def __init__(self, parent=None, game_id=None):
         super().__init__(parent)
+        self.parent = parent
         self.game_id = game_id
         self._init_ui()
 
@@ -44,6 +45,8 @@ class MetadataTab(QWidget):
         if self.game_id:
             layout.addRow(QLabel("Database ID:"), self._create_id_widget())
 
+        self.title_input.textChanged.connect(self._update_title)
+
         layout.addRow(QLabel("Title:"), self.title_input)
         layout.addRow(QLabel("Sort Name:"), self.sort_name_input)
         layout.addRow(QLabel("Developer:"), self.developer_input)
@@ -53,6 +56,9 @@ class MetadataTab(QWidget):
         layout.addRow(QLabel("Description:"), self.description_input)
 
         self.setLayout(layout)
+
+    def _update_title(self, title):
+        self.parent.game_title = title
 
     def _create_widgets(self):
         self.title_input = self._create_line_edit(

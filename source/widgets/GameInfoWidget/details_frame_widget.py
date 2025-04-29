@@ -17,7 +17,7 @@
 
 import os
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -30,7 +30,7 @@ from utilities.helpers import create_horizontal_line
 
 from .star_rating_widget import StarRatingWidget
 
-CONFIG = AppConfig()
+CONFIG = app_config
 RESOURCE_PATH = CONFIG.RESOURCE_PATH
 ICONS_PATH = os.path.join(
     RESOURCE_PATH, "icons", "dark" if CONFIG.PREFERS_DARK_MODE else "light"

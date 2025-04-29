@@ -18,7 +18,7 @@
 import logging
 import os
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import (
     QMutex,
     QMutexLocker,
@@ -44,7 +44,9 @@ from utilities.generators import IconPixmap
 from .context_menu import GameEntryContextMenu
 from .list_item_widget import ListItemWidget
 
-CONFIG = AppConfig()
+CONFIG = app_config
+
+PREFERS_DARK_MODE = CONFIG.PREFERS_DARK_MODE
 
 GAMES_DIRECTORY = os.path.join(CONFIG.USER_DATA_PATH, "games")
 
@@ -58,7 +60,6 @@ SCROLL_DELAY = 200
 SEARCH_DELAY = 300
 
 logger = logging.getLogger(__name__)
-logger.setLevel(CONFIG.DEBUG_LEVELS["GameListWidget"])
 
 
 class GameListWidget(QListWidget):
@@ -120,10 +121,41 @@ class GameListWidget(QListWidget):
         )
 
     def _setup_layout(self):
+        palette = self.palette()
+        highlight_color = palette.highlight().color()
+
+        hover_color = highlight_color
+        hover_color.setAlpha(64)
+
+        r, g, b, a = (
+            hover_color.red(),
+            hover_color.green(),
+            hover_color.blue(),
+            hover_color.alpha(),
+        )
+
         self.setIconSize(ICON_SIZE)
         self.setFrameShape(QFrame.NoFrame)
         self.setAlternatingRowColors(ALTERNATE_LIST_ROW_COLORS)
-        self.setStyleSheet("GameListWidget{background-color: transparent;}")
+        self.setStyleSheet(f"""
+            GameListWidget {{
+                background-color: transparent;
+                outline: none;
+                }}
+            GameListWidget::item{{
+                background-color: transparent;
+                border-radius: 5px;
+                border: none;
+                padding-left:4px;
+                }}
+            GameListWidget::item:selected{{
+                border-left: 2px solid {highlight_color.name()};
+            
+                }}
+            GameListWidget::item:hover{{
+                background-color: rgba{r, g, b, a};
+                }}
+        """)
 
         self.no_games_label = QLabel("<h2>No games found :(</h2>")
         self.no_games_label.setWordWrap(True)

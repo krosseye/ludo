@@ -15,13 +15,13 @@
 
 import os
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QGridLayout, QLabel, QWidget
 
 SPRITESHEET_PATH = os.path.join(
-    AppConfig().RESOURCE_PATH,
+    app_config.RESOURCE_PATH,
     "icons",
     "spritesheet",
     "star_rating_spritesheet.png",

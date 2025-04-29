@@ -15,7 +15,7 @@
 
 import os
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import (
     QEasingCurve,
     QPoint,
@@ -28,7 +28,7 @@ from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QLabel, QVBoxLayout
 from utilities.generators.generate_graphic import CoverPixmap
 
-CONFIG = AppConfig()
+CONFIG = app_config
 PREFERS_DARK_MODE = CONFIG.PREFERS_DARK_MODE
 ANIMATION_DURATION: int = 75
 

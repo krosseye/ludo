@@ -17,7 +17,7 @@
 
 import os
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
@@ -33,7 +33,7 @@ from widgets.GameGridWidget import GameGridWidget
 from .game_list_widget import GameListWidget
 from .search_input import SearchBarWidget
 
-CONFIG = AppConfig()
+CONFIG = app_config
 
 GAMES_DIRECTORY = os.path.join(
     CONFIG.USER_DATA_PATH,

@@ -17,7 +17,7 @@
 
 import os
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
@@ -32,7 +32,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-USER_DATA_PATH = AppConfig().USER_DATA_PATH
+USER_DATA_PATH = app_config.USER_DATA_PATH
 ASSETS_BASE_PATH = os.path.join(USER_DATA_PATH, "games")
 
 ICON_PREVIEW_WIDTH = 100
@@ -45,7 +45,9 @@ WIDE_CAPSULE_PREVIEW_WIDTH = 276
 class AssetsTab(QWidget):
     def __init__(self, game_id=None, parent=None):
         super().__init__(parent)
-        self.game_id = game_id if game_id else None
+        self.game_id = game_id if game_id else "temp"
+        self.parent = parent
+
         self._init_ui()
 
     def _init_ui(self):
@@ -106,7 +108,7 @@ class AssetsTab(QWidget):
         layout.addLayout(capsule_layout)
 
         # Add "Open Assets Folder" button if game_id is provided
-        if self.game_id:
+        if self.game_id != "temp":
             open_folder_button = QPushButton(
                 icon=QIcon.fromTheme("folder"), text="Open Assets Folder", parent=self
             )

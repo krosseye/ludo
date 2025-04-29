@@ -1,9 +1,6 @@
 {
-  "APP_TITLE": "Ludo",
-  "APP_VERSION": "0.1.0",
-  "DEVELOPER": "Killian W",
-  "GITHUB_URL": "https://github.com/killian-w/ludo",
   "DEV_MODE": true,
+  "LOG_LEVEL": "INFO",
   "PORTABLE": true,
   "KICKBACK_MODE": false,
   "BASE_FONT_SIZE": 9,

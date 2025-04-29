@@ -20,18 +20,18 @@ import os
 from dataclasses import replace
 from typing import Optional
 
-from models import AppConfig
-from models.game import Game
+from core.app_config import app_config
+from core.models import Game
 from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, Signal
 from PySide6.QtGui import QIcon
 
-CONFIG = AppConfig()
+from .game_manager import GameManager
+
+CONFIG = app_config
 GAMES_DIRECTORY = os.path.join(CONFIG.USER_DATA_PATH, "games")
-DEBUG_LEVEL = CONFIG.DEBUG_LEVELS["GameListManager"]
 SORT_FAVOURITES_FIRST = CONFIG.SORT_FAVOURITES_FIRST
 SORT_BY_RECENTLY_PLAYED = CONFIG.SORT_BY_RECENTLY_PLAYED
 
-logging.basicConfig(level=DEBUG_LEVEL)
 logger = logging.getLogger("GameListManager")
 
 
@@ -41,6 +41,7 @@ class GameListManager(QAbstractListModel):
     def __init__(self, game_db_manager) -> None:
         super().__init__()
         self._game_db_manager = game_db_manager
+        self.game_manager = GameManager(self._game_db_manager)
         self._games: list[Game] = []
         self._current_sort_order = Qt.AscendingOrder
         self._selected_game_id: Optional[str] = None
@@ -57,6 +58,8 @@ class GameListManager(QAbstractListModel):
         )
         self._game_db_manager.game_deleted.connect(self._on_game_deleted)
         self._game_db_manager.game_favourited.connect(self._on_favourite_changed)
+        self.dataChanged.connect(lambda: logger.debug("List data changed."))
+        self.layoutChanged.connect(lambda: logger.debug("List layout changed."))
 
     @property
     def all_games(self) -> list[Game]:
@@ -98,7 +101,7 @@ class GameListManager(QAbstractListModel):
                 if self._selected_game_id != game_id:
                     self._selected_game_id = game.id
                     self.game_selected.emit(game.id)
-                    logger.info(f"Game selected: {game.id} ({game.title})")
+                    logger.debug(f"Game selected: {game.id} ({game.title})")
         except Exception as e:
             logger.error(f"Error setting selected game ID {game_id}: {str(e)}")
 
@@ -123,9 +126,9 @@ class GameListManager(QAbstractListModel):
 
         try:
             if self._current_sort_order != sort_order:
-                print(self._current_sort_order, sort_order)
                 self._current_sort_order = sort_order
                 self._load_games()
+                logger.debug(f"Sort order changed (now: {self._current_sort_order})")
         except Exception as e:
             logger.error(f"Error setting sort order: {str(e)}")
 
@@ -151,7 +154,7 @@ class GameListManager(QAbstractListModel):
         try:
             self._sort_by_recent = value
             self._load_games()
-            logger.info(f"Sort by recent: {bool(value)}")
+            logger.debug(f"Sort by recent changed: {bool(value)}")
         except Exception as e:
             logger.error(f"Error sorting by recent: {str(e)}")
 
@@ -170,7 +173,6 @@ class GameListManager(QAbstractListModel):
             self.layoutChanged.emit()
             self._apply_sorting(self._games)
             self.selected_game = game_data.id
-            logger.info(f"Game added: {game_data.title} (ID: {game_data.id})")
         except Exception as e:
             logger.error(f"Error adding game: {str(e)}")
 
@@ -192,7 +194,6 @@ class GameListManager(QAbstractListModel):
                     self._games[index] = updated_game
                     self.dataChanged.emit(self.index(index), self.index(index))
                 self._apply_sorting(self._games)
-                logger.info(f"Game updated: {game_id}")
             else:
                 logger.warning(f"Game not found for update: {game_id}")
         except Exception as e:
@@ -223,7 +224,6 @@ class GameListManager(QAbstractListModel):
 
                     self.selected_game = next_game_id
                     self.layoutChanged.emit()
-                    logger.info(f"Game deleted from list (id={game_id})")
                     break
             self._apply_sorting(self._games)
         except Exception as e:
@@ -244,7 +244,7 @@ class GameListManager(QAbstractListModel):
                     game.favourite = is_favourite
                     self.dataChanged.emit(self.index(row), self.index(row))
                     self._apply_sorting(self._games)
-                    logger.info(
+                    logger.debug(
                         f"Game favourited (id={game_id}, favourite={is_favourite})"
                     )
                     break
@@ -267,7 +267,7 @@ class GameListManager(QAbstractListModel):
                     game.lastPlayed = last_played_str
                     self.dataChanged.emit(self.index(row), self.index(row))
                     self._apply_sorting(self._games)
-                    logger.info(
+                    logger.debug(
                         f"Game last played updated (id={game_id}, lastPlayed={last_played_str})"
                     )
                     break
@@ -480,47 +480,3 @@ class GameListManager(QAbstractListModel):
                     self.selected_game = self._games[previous_index].id
         except Exception as e:
             logger.error(f"Error selecting previous game: {str(e)}")
-
-    def add_game(self, game: Game) -> None:
-        """
-        Add a new game to the model via the database manager.
-
-        Args:
-            game (Game): The game object to add.
-        """
-
-        self._game_db_manager.add_game(game)
-
-    def update_game(self, game_id: str, updated_game: Game) -> None:
-        """
-        Update an existing game's information via the database manager.
-
-        Args:
-            game_id (str): The ID of the game to update.
-            updated_game (Game): The updated game object.
-        """
-
-        self._game_db_manager.update_game(game_id, updated_game)
-
-    def delete_game(self, game_id: str) -> None:
-        """
-        Delete a game from the model and database by its ID.
-
-        Args:
-            game_id (str): The ID of the game to delete.
-        """
-
-        self._game_db_manager.delete_game(game_id)
-
-    def mark_as_favourite(self, game_id: str, is_favourite: bool) -> None:
-        """
-        Update a game's favourite status via the database manager.
-
-        Args:
-            game_id (str): The ID of the game whose status is being updated.
-            is_favourite (bool): The new favourite status.
-        """
-        self._game_db_manager.mark_as_favourite(game_id, is_favourite)
-
-    def update_last_played(self, game_id, last_played):
-        self._game_db_manager.update_last_played(game_id, last_played)

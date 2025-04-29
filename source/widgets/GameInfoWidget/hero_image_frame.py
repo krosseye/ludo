@@ -17,7 +17,7 @@
 
 from typing import Optional
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import (
     QFont,
@@ -29,7 +29,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QFrame, QWidget
 
-CONFIG = AppConfig()
+CONFIG = app_config
 PREFERS_DARK = CONFIG.PREFERS_DARK_MODE
 LOGO_POSITION_IN_HERO = CONFIG.LOGO_POSITION_IN_HERO
 

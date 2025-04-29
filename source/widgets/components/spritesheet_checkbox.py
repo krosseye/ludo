@@ -16,12 +16,12 @@
 import os
 from typing import Optional
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import QRect, QSize, Qt, Signal
 from PySide6.QtGui import QPainter, QPixmap
 from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QSizePolicy, QWidget
 
-RESOURCES_PATH = os.path.join(AppConfig().RESOURCE_PATH, "icons", "spritesheet")
+RESOURCES_PATH = os.path.join(app_config.RESOURCE_PATH, "icons", "spritesheet")
 
 
 class LabeledSpritesheetCheckBox(QWidget):

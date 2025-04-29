@@ -19,12 +19,13 @@ import os
 import subprocess
 import webbrowser
 
+from core.app_config import app_config
+from core.services import GameDatabaseManager, GameListManager
 from dialogs.about_dialog import AboutDialog
 from dialogs.GameEntryDialog import GameEntryDialog
 from dialogs.system_info_dialog import SystemInfoDialog
-from models import AppConfig
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtGui import QAction, QGuiApplication, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -32,11 +33,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from services import GameDatabaseManager, GameListManager
 from widgets.GameCollectionWidgets import GameCollectionWidget
 from widgets.GameInfoWidget import GameInfoWidget
 
-CONFIG = AppConfig()
+CONFIG = app_config
 PREFERS_DARK = CONFIG.PREFERS_DARK_MODE
 ICON_BASE_PATH = (
     os.path.join(CONFIG.RESOURCE_PATH, "icons", "dark")
@@ -232,6 +232,12 @@ class MainWindow(QMainWindow):
     def _open_game_dialog(self, game_id=None):
         """Open the Add Game Dialog."""
         dialog = GameEntryDialog(self.game_list, game_id=game_id, parent=self)
+        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
+        dialog_geometry = dialog.geometry()
+        dialog_x = (screen_geometry.width() - dialog_geometry.width()) // 2
+        dialog_y = (screen_geometry.height() - dialog_geometry.height()) // 2
+
+        dialog.move(dialog_x, dialog_y)
         dialog.exec()
 
     def _edit_current_game(self):
@@ -275,7 +281,7 @@ class MainWindow(QMainWindow):
 
     def _show_about_dialog(self):
         """Show the About dialog."""
-        about_dialog = AboutDialog()
+        about_dialog = AboutDialog(self)
         about_dialog.exec()
 
     def resizeEvent(self, event):

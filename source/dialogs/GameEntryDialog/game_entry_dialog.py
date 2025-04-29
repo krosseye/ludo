@@ -18,7 +18,8 @@
 import os
 import shutil
 
-from models import AppConfig, Game
+from core.app_config import app_config
+from core.models import Game
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -34,7 +35,7 @@ from .assets_tab import AssetsTab
 from .files_tab import FilesTab
 from .metadata_tab import MetadataTab
 
-CONFIG = AppConfig()
+CONFIG = app_config
 
 
 USER_DATA_PATH = os.path.join(CONFIG.USER_DATA_PATH, "games")
@@ -45,6 +46,7 @@ class GameEntryDialog(QDialog):
         super().__init__(parent)
         self.game_list_manager = game_list_manager
         self.game_id = game_id
+        self.game_title = None
         self.is_favourite = 0
         self.last_played = None
         self.sessions_played = 0
@@ -61,7 +63,6 @@ class GameEntryDialog(QDialog):
             if not self.game_id
             else f"Edit {self.game_list_manager.find_game_by_id(self.game_id).title}"
         )
-        self.setModal(True)
         self.setMinimumSize(500, 500)
 
         main_layout = QVBoxLayout()
@@ -112,7 +113,9 @@ class GameEntryDialog(QDialog):
             self.sessions_played = int(getattr(game_data, "sessionsPlayed", 0))
             self.playtime = float(getattr(game_data, "playtime", 0.0))
 
-            self.metadata_tab.title_input.setText(getattr(game_data, "title", ""))
+            title = getattr(game_data, "title", "")
+            self.game_title = title
+            self.metadata_tab.title_input.setText(title)
             self.metadata_tab.sort_name_input.setText(
                 getattr(game_data, "sortTitle", "")
             )
@@ -249,10 +252,10 @@ class GameEntryDialog(QDialog):
 
         # Update or add the game in the metadata manager
         if not new_game:
-            self.game_list_manager.update_game(self.game_id, game)
+            self.game_list_manager.game_manager.update_game(self.game_id, game)
             QMessageBox.information(self, "Success", "Game modified successfully!")
         else:
-            self.game_list_manager.add_game(game)
+            self.game_list_manager.game_manager.add_game(game)
             QMessageBox.information(self, "Success", "Game added successfully!")
 
         self.accept()
@@ -269,7 +272,7 @@ class GameEntryDialog(QDialog):
             self._delete_game()
 
     def _delete_game(self):
-        self.game_list_manager.delete_game(self.game_id)
+        self.game_list_manager.game_manager.delete_game(self.game_id)
         folder_path = os.path.join(USER_DATA_PATH, self.game_id)
         if os.path.exists(folder_path):
             shutil.rmtree(folder_path)

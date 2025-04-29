@@ -13,7 +13,7 @@
 ##
 #############################################################################
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
@@ -26,12 +26,12 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-CONFIG = AppConfig()
+CONFIG = app_config
 
 
 class AboutDialog(QDialog):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent):
+        super().__init__(parent)
 
         self.setFixedSize(550, 500)
 

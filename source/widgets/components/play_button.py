@@ -19,12 +19,12 @@ import os
 import time
 from datetime import datetime
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import QProcess, QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QMessageBox
 
-CONFIG = AppConfig()
+CONFIG = app_config
 PREFERS_DARK_MODE = CONFIG.PREFERS_DARK_MODE
 DETACHED_MODE = CONFIG.LAUNCH_PROCESS_DETACHED
 
@@ -141,7 +141,9 @@ class PlayButton(QFrame):
             # Update last played time
             try:
                 last_played_time = datetime.now()
-                self._game_list_manager.update_last_played(game_id, last_played_time)
+                self._game_list_manager.game_manager.update_last_played(
+                    game_id, last_played_time
+                )
             except Exception as e:
                 print(f"Error updating lastPlayed: {e}")
 

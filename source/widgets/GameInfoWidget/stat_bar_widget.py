@@ -18,17 +18,14 @@
 import os
 from datetime import datetime, timedelta
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout
 from utilities.helpers import create_vertical_line
 
-CONFIG = AppConfig()
-ICON_BASE_PATH = os.path.join(
-    CONFIG.RESOURCE_PATH,
-    "icons",
-)
+CONFIG = app_config
+ICON_BASE_PATH = os.path.join(CONFIG.RESOURCE_PATH, "icons")
 
 
 class StatBar(QFrame):
@@ -162,14 +159,9 @@ class StatBar(QFrame):
         if not input_date:
             return "Never"
 
-        date_formats = ["%Y/%m/%d %H:%M:%S", "%Y/%m/%d"]
-        for fmt in date_formats:
-            try:
-                input_date_obj = datetime.strptime(input_date, fmt)
-                break
-            except ValueError:
-                continue
-        else:
+        try:
+            input_date_obj = datetime.strptime(input_date, "%Y/%m/%d %H:%M:%S")
+        except ValueError:
             return "Invalid Date"
 
         today = datetime.today().date()

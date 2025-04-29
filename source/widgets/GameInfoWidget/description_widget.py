@@ -15,7 +15,7 @@
 ##
 #############################################################################
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 )
 from utilities.generators import CoverPixmap
 
-CONFIG = AppConfig()
+CONFIG = app_config
 
 
 class GameDescriptionWidget(QScrollArea):

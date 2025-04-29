@@ -42,4 +42,4 @@ class Game:
     # Gameplay stats
     lastPlayed: str = ""  # ISO 8601 datetime format
     sessionsPlayed: int = 0  # Total number of sessions played
-    playtime: float = 0.0  # Total playtime in miuntes
+    playtime: float = 0.0  # Total playtime in minutes

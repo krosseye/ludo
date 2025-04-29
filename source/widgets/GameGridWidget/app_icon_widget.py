@@ -16,7 +16,7 @@
 import os
 from typing import Any
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, Signal
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 )
 from utilities.generators.generate_graphic import IconPixmap
 
-CONFIG = AppConfig()
+CONFIG = app_config
 
 ITEM_WIDTH = 48
 ITEM_HEIGHT = 48

@@ -16,12 +16,12 @@
 import os
 from typing import Optional
 
-from models import AppConfig
+from core.app_config import app_config
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFontMetrics, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
-CONFIG = AppConfig()
+CONFIG = app_config
 HEART_SPRITESHEET = os.path.join(
     CONFIG.RESOURCE_PATH, "icons", "spritesheet", "heart_spritesheet.png"
 )

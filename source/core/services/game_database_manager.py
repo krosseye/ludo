@@ -19,16 +19,14 @@ import logging
 import os
 from datetime import datetime
 
-from models import AppConfig
-from models.game import Game
+from core.app_config import app_config
+from core.models import Game
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtSql import QSqlDatabase, QSqlQuery
 
-CONFIG = AppConfig()
+CONFIG = app_config
 DB_PATH = os.path.join(CONFIG.USER_DATA_PATH, "games.db")
-DEBUG_LEVEL = CONFIG.DEBUG_LEVELS["GameDatabaseManager"]
 
-logging.basicConfig(level=DEBUG_LEVEL)
 logger = logging.getLogger("GameDatabaseManager")
 
 
@@ -307,7 +305,7 @@ class GameDatabaseManager(QObject):
                 query = self._execute_query(self.COUNT_GAME_BY_ID_QUERY, [game_id])
                 if query.next():
                     exists = query.value(0) > 0
-                    logger.info(f"Game exists check for ID {game_id}: {exists}")
+                    logger.debug(f"Game exists check for ID {game_id}: {exists}")
                     return exists
                 else:
                     logger.warning(
@@ -327,7 +325,7 @@ class GameDatabaseManager(QObject):
                     logger.error(error_msg)
                     raise ValueError(error_msg)
                 self.game_deleted.emit(game_id)
-                logger.info(f"Signal Fired: Game deleted from database (id={game_id})")
+                logger.info(f"Game deleted from database (id={game_id})")
         except Exception as e:
             logger.exception(f"Failed to delete game from database (id={game_id}).")
             raise
@@ -339,9 +337,7 @@ class GameDatabaseManager(QObject):
                     self.UPDATE_FAVOURITE_QUERY, [int(is_favourite), game_id]
                 )
                 self.game_favourited.emit(game_id, is_favourite)
-                logger.info(
-                    f"Signal Fired: Game favourited (id={game_id}, favourite={is_favourite})"
-                )
+                logger.info(f"Game favourited (id={game_id}, favourite={is_favourite})")
         except Exception as e:
             logger.exception(
                 f"Failed to update favourite status (id={game_id}, favourite={is_favourite})."

@@ -17,7 +17,8 @@
 
 import os
 
-from models import AppConfig
+from core.app_config import app_config
+from core.services import GameListManager
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import (
@@ -27,7 +28,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from services import GameListManager
 from utilities.generators import HeroPixmap
 
 from .description_widget import GameDescriptionWidget
@@ -36,7 +36,7 @@ from .hero_image_frame import HeroImageFrame
 from .stat_bar_widget import StatBar
 from .title_bar_widget import TitleBar
 
-CONFIG = AppConfig()
+CONFIG = app_config
 USER_DATA_PATH = os.path.join(CONFIG.USER_DATA_PATH, "games")
 
 
