@@ -17,9 +17,11 @@ from PySide6.QtWidgets import (
     QLabel,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QSpinBox,
     QVBoxLayout,
+    QWidget,
 )
 
 
@@ -66,9 +68,18 @@ class SettingsDialog(QDialog):
         self.cancel_btn.clicked.connect(self.reject)
 
         btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
         btn_layout.addWidget(self.save_btn)
         btn_layout.addWidget(self.cancel_btn)
-        self.layout.addLayout(self.form_layout)
+
+        form_widget = QWidget()
+        form_widget.setLayout(self.form_layout)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(form_widget)
+
+        self.layout.addWidget(scroll_area)
         self.layout.addLayout(btn_layout)
 
     def _add_combobox(self, key, options):
