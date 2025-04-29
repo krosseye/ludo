@@ -19,6 +19,7 @@ import logging
 import os
 
 from core.app_config import app_config
+from core.config import user_config
 from PySide6.QtCore import (
     QMutex,
     QMutexLocker,
@@ -50,11 +51,7 @@ PREFERS_DARK_MODE = CONFIG.PREFERS_DARK_MODE
 
 GAMES_DIRECTORY = os.path.join(CONFIG.USER_DATA_PATH, "games")
 
-ICON_STYLE = CONFIG.LIST_STYLE
-ALTERNATE_LIST_ROW_COLORS = CONFIG.ALTERNATE_LIST_ROW_COLORS
-
 ITEM_SIZE = QSize(48, 48)
-ICON_SIZE = QSize(32, 32) if ICON_STYLE == "icon" else QSize(48, 32)
 
 SCROLL_DELAY = 200
 SEARCH_DELAY = 300
@@ -72,6 +69,9 @@ class GameListWidget(QListWidget):
 
     def __init__(self, game_list_manager, parent=None):
         super().__init__()
+
+        self.ICON_STYLE = user_config["LIST_STYLE"]
+        self.ICON_SIZE = QSize(32, 32) if self.ICON_STYLE == "icon" else QSize(48, 32)
 
         self._game_list_manager = game_list_manager
         self._current_games = None
@@ -134,9 +134,9 @@ class GameListWidget(QListWidget):
             hover_color.alpha(),
         )
 
-        self.setIconSize(ICON_SIZE)
+        self.setIconSize(self.ICON_SIZE)
         self.setFrameShape(QFrame.NoFrame)
-        self.setAlternatingRowColors(ALTERNATE_LIST_ROW_COLORS)
+        self.setAlternatingRowColors(user_config["ALTERNATE_LIST_ROW_COLORS"])
         self.setStyleSheet(f"""
             GameListWidget {{
                 background-color: transparent;
@@ -223,7 +223,9 @@ class GameListWidget(QListWidget):
             game = item.data(Qt.UserRole)
             item.setText("")
             if game and game.id not in self._loaded_widgets:
-                worker = WidgetLoaderWorker(game.id, self._game_list_manager)
+                worker = WidgetLoaderWorker(
+                    game.id, self._game_list_manager, self.ICON_STYLE, self.ICON_SIZE
+                )
                 worker.widget_ready.connect(self._set_item_widget)
                 self.thread_pool.start(worker)
 
@@ -401,19 +403,21 @@ class WidgetLoaderWorker(QRunnable, QObject):
 
     widget_ready = Signal(str, QPixmap, str, bool)
 
-    def __init__(self, game_id, game_list_manager):
+    def __init__(self, game_id, game_list_manager, icon_style, icon_size):
         super().__init__()
         QObject.__init__(self)
         self.game_id = game_id
         self.game_list_manager = game_list_manager
 
+        self.icon_style = icon_style
+        self.icon_size = icon_size
+
     def run(self):
         game = self.game_list_manager.find_game_by_id(self.game_id)
-        icon = self.create_icon(game).pixmap(ICON_SIZE)
+        icon = self.create_icon(game).pixmap(self.icon_size)
         self.widget_ready.emit(game.id, icon, game.title, game.favourite)
 
-    @staticmethod
-    def create_icon(game):
+    def create_icon(self, game):
         """
         Create or load an icon for a given game.
 
@@ -428,14 +432,16 @@ class WidgetLoaderWorker(QRunnable, QObject):
             icon_path = None
 
             for ext in ["png", "jpg", "jpeg", "ico"]:
-                potential_icon_path = f"{icon_base_path}/{ICON_STYLE}.{ext}"
+                potential_icon_path = f"{icon_base_path}/{self.icon_style}.{ext}"
                 if os.path.exists(potential_icon_path):
                     icon_path = potential_icon_path
                     break
 
             if not icon_path:
                 icon_path = IconPixmap(
-                    title=game.title, width=ICON_SIZE.width(), height=ICON_SIZE.height()
+                    title=game.title,
+                    width=self.icon_size.width(),
+                    height=self.icon_size.height(),
                 )
 
             icon = QIcon(icon_path)

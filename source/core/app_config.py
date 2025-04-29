@@ -51,43 +51,13 @@ class AppConfig:
 
         self.DEV_MODE = bool(self._config_file.get("DEV_MODE"))
         self.PORTABLE = bool(self._config_file.get("PORTABLE"))
-        self.BASE_FONT_SIZE = int(self._config_file.get("BASE_FONT_SIZE", 9))
         self.SPLASH_ENABLED = bool(self._config_file.get("SPLASH_ENABLED"))
-        self.STEAM_FRIENDS_ENABLED = bool(
-            self._config_file.get("STEAM_FRIENDS_ENABLED")
-        )
 
         self.VERTICAL_CAPSULE_SIZE = QSize(
             *self._config_file.get("VERTICAL_CAPSULE_SIZE")
         )
         self.HORIZONTAL_CAPSULE_SIZE = QSize(
             *self._config_file.get("HORIZONTAL_CAPSULE_SIZE")
-        )
-
-        self.COLLECTION_STYLE = self._validate_choice(
-            self._config_file.get("COLLECTION_STYLE", "list").lower(),
-            {"list", "grid"},
-            "COLLECTION_STYLE",
-        )
-        self.LIST_STYLE = self._validate_choice(
-            self._config_file.get("LIST_STYLE", "icon").lower(),
-            {"icon", "logo"},
-            "LIST_STYLE",
-        )
-        self.GRID_STYLE = self._validate_choice(
-            self._config_file.get("GRID_STYLE", "capsule_wide").lower(),
-            {"capsule", "capsule_wide", "icon"},
-            "GRID_STYLE",
-        )
-
-        self.ALTERNATE_LIST_ROW_COLORS = self._config_file.get(
-            "ALTERNATE_LIST_ROW_COLORS", False
-        )
-        self.SORT_FAVOURITES_FIRST = self._config_file.get(
-            "SORT_FAVOURITES_FIRST", False
-        )
-        self.SORT_BY_RECENTLY_PLAYED = self._config_file.get(
-            "SORT_BY_RECENTLY_PLAYED", True
         )
 
         self.RESOURCE_PATH = constants.RESOURCE_PATH
@@ -106,13 +76,6 @@ class AppConfig:
         self.LOG_LEVEL = getattr(logging, self.LOG_LEVEL, logging.WARNING)
 
         self.PREFERS_DARK_MODE = darkdetect.isDark()
-        self.THEME = self._config_file.get("THEME", "auto")
-
-        self.LOGO_POSITION_IN_HERO = self._validate_choice(
-            self._config_file.get("LOGO_POSITION_IN_HERO", "center").upper(),
-            {"NORTH", "SOUTH", "EAST", "WEST", "CENTER"},
-            "LOGO_POSITION_IN_HERO",
-        )
 
         self.LAUNCH_PROCESS_DETACHED = self._config_file.get(
             "LAUNCH_PROCESS_DETACHED", False

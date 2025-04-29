@@ -18,6 +18,7 @@
 from typing import Optional
 
 from core.app_config import app_config
+from core.config import user_config
 from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import (
     QFont,
@@ -30,8 +31,8 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import QFrame, QWidget
 
 CONFIG = app_config
+USER_CONFIG = user_config
 PREFERS_DARK = CONFIG.PREFERS_DARK_MODE
-LOGO_POSITION_IN_HERO = CONFIG.LOGO_POSITION_IN_HERO
 
 
 class HeroImageFrame(QFrame):
@@ -42,7 +43,7 @@ class HeroImageFrame(QFrame):
         self._main_image: QImage = QImage()
         self._logo_image: QImage = QImage()
         self._logo_text: Optional[str] = None
-        self._logo_position = LOGO_POSITION_IN_HERO
+        self._logo_position = USER_CONFIG["LOGO_POSITION_IN_HERO"].upper()
         self.setFrameShape(QFrame.NoFrame)
 
     def set_hero_image(self, image_path: str) -> None:

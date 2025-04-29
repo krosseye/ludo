@@ -18,6 +18,7 @@
 import os
 
 from core.app_config import app_config
+from core.config import user_config
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
@@ -39,8 +40,6 @@ GAMES_DIRECTORY = os.path.join(
     CONFIG.USER_DATA_PATH,
     "games",
 )
-
-COLLECTION_STYLE = CONFIG.COLLECTION_STYLE
 
 
 class GameCollectionWidget(QFrame):
@@ -68,7 +67,7 @@ class GameCollectionWidget(QFrame):
 
         self.game_list_widget = (
             GameListWidget(self.game_list_manager, self)
-            if COLLECTION_STYLE == "list"
+            if user_config["COLLECTION_STYLE"] == "list"
             else GameGridWidget(self.game_list_manager, self)
         )
 

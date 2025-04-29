@@ -21,6 +21,7 @@ from dataclasses import replace
 from typing import Optional
 
 from core.app_config import app_config
+from core.config import user_config
 from core.models import Game
 from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, Signal
 from PySide6.QtGui import QIcon
@@ -29,8 +30,6 @@ from .game_manager import GameManager
 
 CONFIG = app_config
 GAMES_DIRECTORY = os.path.join(CONFIG.USER_DATA_PATH, "games")
-SORT_FAVOURITES_FIRST = CONFIG.SORT_FAVOURITES_FIRST
-SORT_BY_RECENTLY_PLAYED = CONFIG.SORT_BY_RECENTLY_PLAYED
 
 logger = logging.getLogger("GameListManager")
 
@@ -45,8 +44,8 @@ class GameListManager(QAbstractListModel):
         self._games: list[Game] = []
         self._current_sort_order = Qt.AscendingOrder
         self._selected_game_id: Optional[str] = None
-        self._group_favourites: bool = SORT_FAVOURITES_FIRST
-        self._sort_by_recent: bool = SORT_BY_RECENTLY_PLAYED
+        self._group_favourites: bool = user_config["SORT_FAVOURITES_FIRST"]
+        self._sort_by_recent: bool = user_config["SORT_BY_RECENTLY_PLAYED"]
 
         self._load_games()
         self.selected_game = self._games[0].id if self._games else None

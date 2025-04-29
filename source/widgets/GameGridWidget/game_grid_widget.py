@@ -19,6 +19,7 @@ import os
 from typing import Any, Optional, Union
 
 from core.app_config import app_config
+from core.config import user_config
 from core.models import Game
 from core.services import GameListManager
 from PySide6.QtCore import QSize, Qt
@@ -63,7 +64,7 @@ class GameGridWidget(QFrame):
 
         self.item_style = None
         self.item_spacing = 20
-        self.set_item_style()
+        self.set_item_style(user_config["GRID_STYLE"])
 
         self.setMinimumWidth(int(self.item_width + (self.item_spacing * 2)))
 
@@ -106,7 +107,7 @@ class GameGridWidget(QFrame):
 
         self.setFocus()
 
-    def set_item_style(self, style=CONFIG.GRID_STYLE):
+    def set_item_style(self, style="capsule_wide"):
         """
         Sets the item style and updates the dimensions.
 

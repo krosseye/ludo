@@ -2,19 +2,8 @@
   "DEV_MODE": true,
   "LOG_LEVEL": "INFO",
   "PORTABLE": true,
-  "KICKBACK_MODE": false,
-  "BASE_FONT_SIZE": 9,
   "SPLASH_ENABLED": true,
-  "STEAM_FRIENDS_ENABLED": true,
-  "COLLECTION_STYLE": "list",
-  "LIST_STYLE": "icon",
-  "GRID_STYLE": "capsule_wide",
-  "ALTERNATE_LIST_ROW_COLORS": false,
   "VERTICAL_CAPSULE_SIZE": [150, 225],
   "HORIZONTAL_CAPSULE_SIZE": [276, 129],
-  "THEME": "auto",
-  "SORT_FAVOURITES_FIRST": false,
-  "SORT_BY_RECENTLY_PLAYED": true,
-  "LAUNCH_PROCESS_DETACHED": false,
-  "LOGO_POSITION_IN_HERO": "center"
+  "LAUNCH_PROCESS_DETACHED": false
 }

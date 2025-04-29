@@ -21,6 +21,7 @@ from pathlib import Path
 
 import core.constants as constants  # type: ignore
 from core.app_config import app_config
+from core.config import user_config
 from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtGui import QFont, QIcon, QPixmap
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
@@ -30,15 +31,15 @@ from widgets.main_window import MainWindow
 _instance_server = None
 
 
-def setup_application(config) -> QApplication:
+def setup_application(_app_config, _user_config) -> QApplication:
     """Set up and return the QApplication instance."""
     app = QApplication(sys.argv)
-    if not config.THEME.lower() == "auto":
-        app.setStyle(config.THEME)
+    if not _user_config["THEME"].lower() == "auto":
+        app.setStyle(_user_config["THEME"])
     font = QFont()
-    font.setPointSize(config.BASE_FONT_SIZE)
+    font.setPointSize(_user_config["BASE_FONT_SIZE"])
     app.setFont(font)
-    app.setWindowIcon(QIcon(config.APP_ICON))
+    app.setWindowIcon(QIcon(_app_config.APP_ICON))
     return app
 
 
@@ -143,7 +144,17 @@ def main():
         sys.exit(1)
 
     config = app_config
-    app = setup_application(config)
+    _user_config = user_config
+    _user_config.set_config_file(
+        Path(
+            os.path.join(
+                config.USER_DATA_PATH,
+                "config.json",
+            )
+        ).resolve()
+    )
+
+    app = setup_application(config, _user_config)
 
     splash_enabled = config.SPLASH_ENABLED
     if splash_enabled:

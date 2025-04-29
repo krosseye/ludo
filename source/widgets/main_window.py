@@ -81,7 +81,9 @@ class MainWindow(QMainWindow):
 
         self._create_view_menu(menubar)
 
-        if CONFIG.STEAM_FRIENDS_ENABLED:
+        from core.config import user_config
+
+        if user_config["STEAM_FRIENDS_ENABLED"]:
             self._create_friends_actions(menubar)
 
         self._create_help_menu(menubar)
