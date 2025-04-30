@@ -35,6 +35,7 @@ class GameDatabaseManager(QObject):
     game_updated = Signal(str, Game)
     game_deleted = Signal(str)
     game_favourited = Signal(str, bool)
+    game_logo_position_changed = Signal(str, str)
     game_last_played_updated = Signal(str, str)
 
     CREATE_TABLE_QUERY = """
@@ -44,6 +45,7 @@ class GameDatabaseManager(QObject):
               sortTitle TEXT,
               favourite INTEGER DEFAULT 0,
               starRating REAL,
+              logoPosition TEXT DEFAULT 'center',
               developer TEXT,
               publisher TEXT,
               year INTEGER,
@@ -69,6 +71,7 @@ class GameDatabaseManager(QObject):
             sortTitle, 
             favourite, 
             starRating, 
+            logoPosition, 
             developer, 
             publisher, 
             year, 
@@ -81,7 +84,7 @@ class GameDatabaseManager(QObject):
             sessionsPlayed, 
             playtime
             )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     UPDATE_GAME_QUERY = """
@@ -90,6 +93,7 @@ class GameDatabaseManager(QObject):
             sortTitle = ?, 
             favourite = ?, 
             starRating = ?, 
+            logoPosition = ?,
             developer = ?, 
             publisher = ?, 
             year = ?, 
@@ -111,6 +115,8 @@ class GameDatabaseManager(QObject):
     UPDATE_FAVOURITE_QUERY = "UPDATE games SET favourite = ? WHERE id = ?"
 
     UPDATE_LAST_PLAYED_QUERY = "UPDATE games SET lastPlayed = ? WHERE id = ?"
+
+    UPDATE_LOGO_POSITION_QUERY = "UPDATE games SET logoPosition = ? WHERE id = ?"
 
     def __init__(self, db_path=DB_PATH):
         super().__init__()
@@ -194,6 +200,7 @@ class GameDatabaseManager(QObject):
                 sortTitle=query.value("sortTitle"),
                 favourite=bool(query.value("favourite")),
                 starRating=float(query.value("starRating")),
+                logoPosition=query.value("logoPosition"),
                 developer=query.value("developer"),
                 publisher=query.value("publisher"),
                 year=query.value("year"),
@@ -246,6 +253,7 @@ class GameDatabaseManager(QObject):
                     game.sortTitle,
                     int(game.favourite),
                     float(game.starRating),
+                    game.logoPosition,
                     game.developer,
                     game.publisher,
                     game.year,
@@ -277,6 +285,7 @@ class GameDatabaseManager(QObject):
                     updated_game.sortTitle,
                     int(updated_game.favourite),
                     float(updated_game.starRating),
+                    updated_game.logoPosition,
                     updated_game.developer,
                     updated_game.publisher,
                     updated_game.year,
@@ -328,6 +337,22 @@ class GameDatabaseManager(QObject):
                 logger.info(f"Game deleted from database (id={game_id})")
         except Exception as e:
             logger.exception(f"Failed to delete game from database (id={game_id}).")
+            raise
+
+    def set_logo_position(self, game_id: str, position: str = "center"):
+        try:
+            with self:
+                self._execute_query(
+                    self.UPDATE_LOGO_POSITION_QUERY, [position, game_id]
+                )
+                self.game_logo_position_changed.emit(game_id, position)
+                logger.info(
+                    f"Game logo position changed (id={game_id}, position={position})"
+                )
+        except Exception as e:
+            logger.exception(
+                f"Failed to change logo position (id={game_id}, position={position})."
+            )
             raise
 
     def mark_as_favourite(self, game_id: str, is_favourite: bool):

@@ -19,11 +19,13 @@ import os
 
 from core.app_config import app_config
 from core.services import GameListManager
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtCore import QPoint, QRect, Qt, Signal
+from PySide6.QtGui import QColor, QKeyEvent, QPainter
 from PySide6.QtWidgets import (
     QFrame,
+    QGridLayout,
     QHBoxLayout,
+    QPushButton,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -38,6 +40,113 @@ from .title_bar_widget import TitleBar
 
 CONFIG = app_config
 USER_DATA_PATH = os.path.join(CONFIG.USER_DATA_PATH, "games")
+
+
+class AlignmentButton(QPushButton):
+    def __init__(self, alignment: str, parent=None):
+        super().__init__(parent)
+        self.alignment = alignment
+        self.setFixedSize(40, 40)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setToolTip(f"Align {alignment.capitalize()}")
+
+        self._setup_style()
+
+    def _setup_style(self):
+        pal = self.palette()
+        base_color = pal.base().color()
+        alt_color = pal.mid().color()
+        highlight_color = pal.highlight().color()
+
+        self.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {base_color.name()};
+                border: 1px solid {alt_color.name()};
+                border-radius: 4px;
+            }}
+            QPushButton:hover {{
+                background-color: {alt_color.name()};
+                border: 1px solid {pal.midlight().color().name()};
+            }}
+            QPushButton:pressed {{
+                background-color: {highlight_color.name()};
+            }}
+        """)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        color = self.palette().highlight().color()
+        if self.isDown():
+            color = QColor("white")
+
+        rect = self.rect().adjusted(10, 10, -10, -10)
+
+        if self.alignment == "north":
+            painter.fillRect(QRect(rect.left(), rect.top(), rect.width(), 6), color)
+        elif self.alignment == "south":
+            painter.fillRect(
+                QRect(rect.left(), rect.bottom() - 6, rect.width(), 6), color
+            )
+        elif self.alignment == "west":
+            painter.fillRect(QRect(rect.left(), rect.top(), 6, rect.height()), color)
+        elif self.alignment == "east":
+            painter.fillRect(
+                QRect(rect.right() - 6, rect.top(), 6, rect.height()), color
+            )
+        elif self.alignment == "center":
+            center = rect.center()
+            painter.setBrush(color)
+            painter.setPen(Qt.NoPen)
+            painter.drawEllipse(center, 6, 6)
+
+
+class PositionSelectorWidget(QWidget):
+    position_selected = Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(
+            Qt.Popup | Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint
+        )
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self._create_ui()
+
+    def _create_ui(self):
+        layout = QGridLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)
+        self.setLayout(layout)
+
+        for row, col in [(0, 0), (0, 2), (2, 0), (2, 2)]:
+            spacer = QWidget()
+            spacer.setFixedSize(10, 10)
+            spacer.setAttribute(Qt.WA_TransparentForMouseEvents)
+            layout.addWidget(spacer, row, col)
+
+        positions = {
+            "north": (0, 1),
+            "south": (2, 1),
+            "west": (1, 0),
+            "east": (1, 2),
+            "center": (1, 1),
+        }
+
+        for pos, (row, col) in positions.items():
+            btn = AlignmentButton(pos)
+            btn.clicked.connect(lambda _, p=pos: self._select_position(p))
+            layout.addWidget(btn, row, col)
+
+    def _select_position(self, position):
+        self.position_selected.emit(position)
+        self.hide()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setCompositionMode(QPainter.CompositionMode_Clear)
+        painter.fillRect(self.rect(), Qt.transparent)
 
 
 class GameInfoWidget(QFrame):
@@ -88,6 +197,27 @@ class GameInfoWidget(QFrame):
         self.hero_image_frame.setMinimumHeight(150)
         self.scrollable_layout.addWidget(self.hero_image_frame, 3)
 
+        self.hero_image_frame.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.hero_image_frame.customContextMenuRequested.connect(
+            self._show_logo_position_menu
+        )
+
+    def _show_logo_position_menu(self, position):
+        dialog = PositionSelectorWidget(self)
+        dialog.position_selected.connect(self._set_logo_position)
+
+        global_pos = self.hero_image_frame.mapToGlobal(position)
+        dialog.move(
+            global_pos
+            - QPoint(dialog.sizeHint().width() // 2, dialog.sizeHint().height() // 2)
+        )
+        dialog.show()
+
+    def _set_logo_position(self, position):
+        game_id = self.game_list.selected_game
+        if game_id:
+            self.game_list.game_manager.set_logo_position(game_id, position)
+
     def _setup_stat_bar(self):
         self.stat_bar = StatBar()
         self.scrollable_layout.addWidget(self.stat_bar, 0)
@@ -136,7 +266,7 @@ class GameInfoWidget(QFrame):
         user_data_path = os.path.join(USER_DATA_PATH, game_info.id)
 
         self._update_hero_image(game_info.title, user_data_path)
-        self._update_logo_image(game_info.title, user_data_path)
+        self._update_logo_image(game_info.title, user_data_path, game_info.logoPosition)
         self._update_title_bar(game_info, user_data_path)
         self._update_stat_bar(game_info)
         self._update_description(game_info.description or "No description available")
@@ -150,11 +280,11 @@ class GameInfoWidget(QFrame):
         )
         self.hero_image_frame.set_hero_image(hero_image_path)
 
-    def _update_logo_image(self, title, path):
+    def _update_logo_image(self, title, path, position):
         logo_image_path = self._find_image_path(path, "logo")
 
         if logo_image_path:
-            self.hero_image_frame.set_logo_image(logo_image_path)
+            self.hero_image_frame.set_logo_image(logo_image_path, position)
         else:
             self.hero_image_frame.set_logo_text(title)
 

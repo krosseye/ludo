@@ -51,6 +51,7 @@ class GameEntryDialog(QDialog):
         self.last_played = None
         self.sessions_played = 0
         self.playtime = 0.0
+        self.logo_position = "center"
 
         self._init_ui()
 
@@ -112,6 +113,7 @@ class GameEntryDialog(QDialog):
 
             self.sessions_played = int(getattr(game_data, "sessionsPlayed", 0))
             self.playtime = float(getattr(game_data, "playtime", 0.0))
+            self.logo_position = getattr(game_data, "logoPosition", "center")
 
             title = getattr(game_data, "title", "")
             self.game_title = title
@@ -237,6 +239,7 @@ class GameEntryDialog(QDialog):
             sortTitle=sort_name,
             favourite=self.is_favourite,
             starRating=f"{star_rating:.1f}",
+            logoPosition=self.logo_position,
             developer=developer,
             publisher=publisher,
             year=year,

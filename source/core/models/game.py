@@ -26,6 +26,7 @@ class Game:
     # User preferences
     favourite: bool = False  # Whether the game is marked as a favorite
     starRating: float = 0.0  # User's star rating for the game
+    logoPosition: str = "center"  # Options: north, south, east, west, center
 
     # Metadata
     developer: str = ""  # Game developer's name

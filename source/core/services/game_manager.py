@@ -39,6 +39,9 @@ class GameManager(QObject):
     def update_last_played(self, game_id: str, last_played: str):
         self._db_manager.update_last_played(game_id, last_played)
 
+    def set_logo_position(self, game_id: str, position: str = "center"):
+        self._db_manager.set_logo_position(game_id, position)
+
     def delete_game(self, game_id: str):
         """
         Delete a game from the model and database by its ID.

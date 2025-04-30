@@ -55,6 +55,9 @@ class GameListManager(QAbstractListModel):
         self._game_db_manager.game_last_played_updated.connect(
             self._on_last_played_updated
         )
+        self._game_db_manager.game_logo_position_changed.connect(
+            self._on_logo_position_updated
+        )
         self._game_db_manager.game_deleted.connect(self._on_game_deleted)
         self._game_db_manager.game_favourited.connect(self._on_favourite_changed)
         self.dataChanged.connect(lambda: logger.debug("List data changed."))
@@ -272,6 +275,28 @@ class GameListManager(QAbstractListModel):
                     break
         except Exception as e:
             logger.error(f"Error updating last played for game ID {game_id}: {str(e)}")
+
+    def _on_logo_position_updated(self, game_id: str, logo_position: str) -> None:
+        """
+        Handle updates to a game's logo position.
+
+        Args:
+            game_id (str): The ID of the game being updated.
+            logo_position (str): The new position for the logo.
+        """
+        try:
+            for row, game in enumerate(self._games):
+                if game.id == game_id:
+                    game.logoPosition = logo_position
+                    self.dataChanged.emit(self.index(row), self.index(row))
+                    logger.debug(
+                        f"Game logo position changed (id={game_id}, position={logo_position})"
+                    )
+                    break
+        except Exception as e:
+            logger.error(
+                f"Error changing logo position for game ID {game_id}: {str(e)}"
+            )
 
     def rowCount(self, parent=QModelIndex()) -> int:
         return len(self._games) if not parent.isValid() else 0
