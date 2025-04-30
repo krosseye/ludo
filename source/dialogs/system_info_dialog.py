@@ -19,7 +19,8 @@ import urllib.request
 
 import cpuinfo
 import psutil
-from PySide6.QtCore import QCoreApplication
+from PySide6.QtCore import QCoreApplication, QObject, QThread, Signal
+from PySide6.QtGui import QOffscreenSurface, QOpenGLContext
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -30,16 +31,36 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+GL_VENDOR = 0x1F00
+GL_RENDERER = 0x1F01
+
+
+class InfoWorker(QObject):
+    finished = Signal(dict)
+
+    def __init__(self):
+        super().__init__()
+        self.system_info = SystemInfo()
+
+    def run(self):
+        info = self.system_info.get_system_info(include_gpu=False)
+        self.finished.emit(info)
+
 
 class SystemInfo:
-    def get_system_info(self):
-        return {
+    def get_system_info(self, include_gpu=True):
+        info = {
             "Operating System": self.get_os_info(),
             "Processor": self.get_cpu_info(),
             "Memory": self.get_memory_info(),
             "Storage": self.get_storage_info(),
             "Network": self.get_network_info(),
         }
+
+        if include_gpu:
+            info["GPU"] = self.get_gpu_info()
+
+        return info
 
     @staticmethod
     def get_cpu_info():
@@ -51,6 +72,30 @@ class SystemInfo:
             "Cores": psutil.cpu_count(logical=False),
             "Threads": psutil.cpu_count(logical=True),
         }
+
+    @staticmethod
+    def get_gpu_info():
+        try:
+            surface = QOffscreenSurface()
+            surface.create()
+
+            context = QOpenGLContext()
+            context.create()
+            context.makeCurrent(surface)
+
+            functions = context.functions()
+            vendor = functions.glGetString(GL_VENDOR)
+            renderer = functions.glGetString(GL_RENDERER)
+
+            context.doneCurrent()
+            surface.destroy()
+
+            return {
+                "Vendor": vendor if vendor else "Unknown",
+                "Brand": renderer if renderer else "Unknown",
+            }
+        except Exception as e:
+            return {"Status": f"Failed to retrieve GPU info: {e}"}
 
     def get_memory_info(self):
         svmem = psutil.virtual_memory()
@@ -124,10 +169,13 @@ class SystemInfo:
 
     @staticmethod
     def get_public_ip():
+        urls = [
+            "https://api64.ipify.org?format=text",
+            "https://checkip.amazonaws.com",
+            "https://ifconfig.me/ip",
+        ]
         try:
-            with urllib.request.urlopen(
-                "https://api64.ipify.org?format=text"
-            ) as response:
+            with urllib.request.urlopen(urls[0]) as response:
                 if response.status == 200:
                     response_data = response.read().decode("utf-8")
                     return response_data
@@ -142,42 +190,60 @@ class SystemInfoDialog(QDialog):
         super().__init__()
         self.setWindowTitle("System Information")
         self.setFixedSize(450, 400)
-        self.system_info_manager = SystemInfo()
-        self.layout = self.create_layout()
+        self.layout = QVBoxLayout(self)
         self.setLayout(self.layout)
+        self.is_info_loading = False
 
-    def create_layout(self):
-        layout = QVBoxLayout(self)
-
-        layout.addWidget(QLabel("<h1>System Information</h1>", self))
-        layout.addWidget(
-            QLabel(
-                f"{QCoreApplication.applicationName()} has detected the following hardware and software in your system:",
-                self,
-            )
+        self.layout.addWidget(QLabel("<h1>System Information</h1>", self))
+        self.label = QLabel(
+            f"{QCoreApplication.applicationName()} is gathering system info..."
         )
+        self.layout.addWidget(self.label)
 
-        scroll_area = QScrollArea(self)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setWidget(self.create_info_widget())
-        layout.addWidget(scroll_area)
+        self.scroll_area = QScrollArea(self)
+        self.scroll_area.setWidgetResizable(True)
+        self.layout.addWidget(self.scroll_area)
 
-        close_button = QPushButton("OK", self)
-        close_button.clicked.connect(self.close)
-
+        self.close_button = QPushButton("OK", self)
+        self.close_button.setEnabled(False)
+        self.close_button.clicked.connect(self.close)
         button_layout = QHBoxLayout()
         button_layout.addStretch()
-        button_layout.addWidget(close_button)
+        button_layout.addWidget(self.close_button)
+        self.layout.addLayout(button_layout)
 
-        layout.addLayout(button_layout)
+        self.load_system_info_async()
 
-        return layout
+    def load_system_info_async(self):
+        self.is_info_loading = True
+        self.thread = QThread()
+        self.worker = InfoWorker()
+        self.worker.moveToThread(self.thread)
 
-    def create_info_widget(self):
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.on_info_loaded)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+        self.thread.start()
+
+    def on_info_loaded(self, system_info):
+        gpu_info = SystemInfo.get_gpu_info()  # Fetch GPU info safely in main thread
+        system_info = {"GPU": gpu_info, **system_info}
+
+        info_widget = self.create_info_widget(system_info)
+        self.scroll_area.setWidget(info_widget)
+
+        self.label.setText(
+            f"{QCoreApplication.applicationName()} has detected the following hardware and software in your system:"
+        )
+        self.close_button.setEnabled(True)
+        self.is_info_loading = False
+
+    def create_info_widget(self, system_info):
         scroll_content = QWidget()
         scroll_layout = QVBoxLayout(scroll_content)
-
-        system_info = self.system_info_manager.get_system_info()
 
         categories = list(system_info.items())
         total_categories = len(categories)
