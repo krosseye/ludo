@@ -5,8 +5,6 @@ from core.constants import (
     DEFAULT_USER_CONFIG,
     GRID_STYLE_OPTIONS,
     LIST_STYLE_OPTIONS,
-    LOGO_POSITION_IN_HERO_OPTIONS,
-    THEME_OPTIONS,
 )
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -20,6 +18,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QSpinBox,
+    QStyleFactory,
     QVBoxLayout,
     QWidget,
 )
@@ -29,9 +28,10 @@ class SettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"{APP_TITLE} Settings")
-        self.setMinimumWidth(400)
+        self.setMinimumSize(400, 400)
 
         self.controls = {}
+        self.reset_buttons = {}
         self.initial_values = user_config.copy()
 
         self.layout = QVBoxLayout(self)
@@ -43,9 +43,10 @@ class SettingsDialog(QDialog):
 
     def build_ui(self):
         # Comboboxes
-        self._add_combobox("THEME", THEME_OPTIONS)
+        available_styles = QStyleFactory.keys()
+        available_styles.insert(0, "auto")
+        self._add_combobox("THEME", available_styles)
         self._add_spinbox("BASE_FONT_SIZE", min_=6, max_=24)
-        self._add_combobox("LOGO_POSITION_IN_HERO", LOGO_POSITION_IN_HERO_OPTIONS)
         self._add_combobox("COLLECTION_STYLE", COLLECTION_STYLE_OPTIONS)
         self._add_combobox("LIST_STYLE", LIST_STYLE_OPTIONS)
         self._add_combobox("GRID_STYLE", GRID_STYLE_OPTIONS)
@@ -79,6 +80,7 @@ class SettingsDialog(QDialog):
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(form_widget)
 
+        self.layout.addWidget(QLabel(f"<h1>{APP_TITLE} Settings</h1>"))
         self.layout.addWidget(scroll_area)
         self.layout.addLayout(btn_layout)
 
@@ -118,6 +120,9 @@ class SettingsDialog(QDialog):
         reset_btn.clicked.connect(lambda: self._reset_field(key))
         layout.addWidget(reset_btn)
 
+        self.reset_buttons[key] = reset_btn
+        self._update_reset_button_state(key)
+
         container = QLabel()
         container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.form_layout.addRow(QLabel(label_text), layout)
@@ -140,6 +145,15 @@ class SettingsDialog(QDialog):
 
     def _on_change(self):
         self.update_save_button_state()
+        for key in self.controls:
+            self._update_reset_button_state(key)
+
+    def _update_reset_button_state(self, key):
+        current_value = self._value_from_widget(key, self.controls[key])
+        default_value = DEFAULT_USER_CONFIG.get(key)
+        reset_btn = self.reset_buttons.get(key)
+        if reset_btn:
+            reset_btn.setEnabled(current_value != default_value)
 
     def update_save_button_state(self):
         self.changed = any(

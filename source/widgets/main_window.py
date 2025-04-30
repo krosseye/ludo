@@ -244,8 +244,8 @@ class MainWindow(QMainWindow):
         dialog_x = (screen_geometry.width() - dialog_geometry.width()) // 2
         dialog_y = (screen_geometry.height() - dialog_geometry.height()) // 2
 
-        dialog.move(dialog_x, dialog_y)
         dialog.exec()
+        dialog.move(dialog_x, dialog_y)
 
     def _open_settings_dialog(self):
         dialog = SettingsDialog()
@@ -254,8 +254,8 @@ class MainWindow(QMainWindow):
         dialog_x = (screen_geometry.width() - dialog_geometry.width()) // 2
         dialog_y = (screen_geometry.height() - dialog_geometry.height()) // 2
 
-        dialog.move(dialog_x, dialog_y)
         dialog.exec()
+        dialog.move(dialog_x, dialog_y)
 
     def _edit_current_game(self):
         """Edit the selected game."""

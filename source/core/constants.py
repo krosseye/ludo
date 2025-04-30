@@ -23,20 +23,17 @@ RESOURCE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources"
 )
 DEFAULT_USER_CONFIG = {
-    "THEME": "auto",  # auto, fusion, etc
+    "THEME": "auto",
     "BASE_FONT_SIZE": 9,
-    "LOGO_POSITION_IN_HERO": "center",  # north, south, east, west, center
-    "COLLECTION_STYLE": "list",  # list or grid
-    "LIST_STYLE": "icon",  # icon or logo
-    "GRID_STYLE": "capsule_wide",  # capsule, capsule_wide, or icon
+    "COLLECTION_STYLE": "list",
+    "LIST_STYLE": "icon",
+    "GRID_STYLE": "capsule_wide",
     "STEAM_FRIENDS_ENABLED": True,
     "ALTERNATE_LIST_ROW_COLORS": False,
     "SORT_BY_RECENTLY_PLAYED": True,
     "SORT_FAVOURITES_FIRST": False,
     "KICKBACK_MODE": False,
 }
-LOGO_POSITION_IN_HERO_OPTIONS = ["north", "south", "east", "west", "center"]
-THEME_OPTIONS = ["auto", "fusion"]
 COLLECTION_STYLE_OPTIONS = ["list", "grid"]
 LIST_STYLE_OPTIONS = ["icon", "logo"]
 GRID_STYLE_OPTIONS = ["capsule", "capsule_wide", "icon"]
