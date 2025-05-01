@@ -53,12 +53,11 @@ class AppConfig:
         self.PORTABLE = bool(self._config_file.get("PORTABLE"))
         self.SPLASH_ENABLED = bool(self._config_file.get("SPLASH_ENABLED"))
 
-        self.VERTICAL_CAPSULE_SIZE = QSize(
-            *self._config_file.get("VERTICAL_CAPSULE_SIZE")
-        )
-        self.HORIZONTAL_CAPSULE_SIZE = QSize(
-            *self._config_file.get("HORIZONTAL_CAPSULE_SIZE")
-        )
+        _vertical_size = self._config_file.get("VERTICAL_CAPSULE_SIZE", [150, 225])
+        _horizontal_size = self._config_file.get("HORIZONTAL_CAPSULE_SIZE", [276, 129])
+
+        self.VERTICAL_CAPSULE_SIZE = QSize(*_vertical_size)
+        self.HORIZONTAL_CAPSULE_SIZE = QSize(*_horizontal_size)
 
         self.RESOURCE_PATH = constants.RESOURCE_PATH
         self.USER_DATA_PATH = (
@@ -67,19 +66,14 @@ class AppConfig:
             else os.path.join(self.RESOURCE_PATH, "userdata")
         )
 
-        _log_level_str = self._config_file.get("LOG_LEVEL", "WARNING").upper()
-        self.LOG_LEVEL = self._validate_choice(
-            _log_level_str,
+        _log_level_str = self._validate_choice(
+            self._config_file.get("LOG_LEVEL", "WARNING").upper(),
             {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"},
             "LOG_LEVEL",
         )
-        self.LOG_LEVEL = getattr(logging, self.LOG_LEVEL, logging.WARNING)
+        self.LOG_LEVEL = getattr(logging, _log_level_str, logging.WARNING)
 
         self.PREFERS_DARK_MODE = darkdetect.isDark()
-
-        self.LAUNCH_PROCESS_DETACHED = self._config_file.get(
-            "LAUNCH_PROCESS_DETACHED", False
-        )
 
         self.APP_ICON_ON_DARK = os.path.join(
             self.RESOURCE_PATH, "icons", "icon_on_dark.png"
