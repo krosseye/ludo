@@ -13,18 +13,23 @@
 ##
 #############################################################################
 
-import platform
+import csv
+import json
 import socket
 import urllib.request
+from datetime import datetime
 
 import cpuinfo
 import psutil
-from PySide6.QtCore import QCoreApplication, QObject, QThread, Signal
+from PySide6.QtCore import QCoreApplication, QObject, QSysInfo, QThread, Signal
 from PySide6.QtGui import QOffscreenSurface, QOpenGLContext
 from PySide6.QtWidgets import (
     QDialog,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
+    QMenu,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
@@ -136,15 +141,16 @@ class SystemInfo:
     @staticmethod
     def get_os_info():
         return {
-            "Platform": platform.platform(),
-            "Architecture": platform.architecture()[0],
+            "Platform": QSysInfo.prettyProductName(),
+            "Kernel": f"{QSysInfo.kernelType()} ({QSysInfo.kernelVersion()})",
+            "Architecture": QSysInfo.currentCpuArchitecture(),
             "User": psutil.users()[0].name if psutil.users() else "Unknown",
         }
 
     def get_network_info(self):
         try:
             return {
-                "Hostname": socket.gethostname(),
+                "Host Name": QSysInfo.machineHostName(),
                 "Local IP Address": self.get_ip_address(),
                 "Public IP Address": self.get_public_ip(),
             }
@@ -193,6 +199,7 @@ class SystemInfoDialog(QDialog):
         self.layout = QVBoxLayout(self)
         self.setLayout(self.layout)
         self.is_info_loading = False
+        self.system_info = None
 
         self.layout.addWidget(QLabel("<h1>System Information</h1>", self))
         self.label = QLabel(
@@ -204,15 +211,113 @@ class SystemInfoDialog(QDialog):
         self.scroll_area.setWidgetResizable(True)
         self.layout.addWidget(self.scroll_area)
 
+        self.export_button = QPushButton("Export...", self)
+        self.export_button.setEnabled(False)
+        self.export_button.clicked.connect(self.show_export_options)
+
         self.close_button = QPushButton("OK", self)
         self.close_button.setEnabled(False)
+        self.close_button.setDefault(True)
         self.close_button.clicked.connect(self.close)
+
         button_layout = QHBoxLayout()
+        button_layout.addWidget(self.export_button)
         button_layout.addStretch()
         button_layout.addWidget(self.close_button)
         self.layout.addLayout(button_layout)
 
         self.load_system_info_async()
+
+    def show_export_options(self):
+        if not self.system_info:
+            return
+
+        menu = QMenu(self)
+
+        json_action = menu.addAction("Export as JSON")
+        json_action.triggered.connect(lambda: self.export_data("json"))
+
+        csv_action = menu.addAction("Export as CSV")
+        csv_action.triggered.connect(lambda: self.export_data("csv"))
+
+        txt_action = menu.addAction("Export as Text")
+        txt_action.triggered.connect(lambda: self.export_data("txt"))
+
+        menu.exec_(
+            self.export_button.mapToGlobal(self.export_button.rect().bottomLeft())
+        )
+
+    def export_data(self, format_type):
+        if not self.system_info:
+            return
+
+        default_name = f"system_info_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+        file_filter = ""
+        if format_type == "json":
+            file_filter = "JSON Files (*.json)"
+        elif format_type == "csv":
+            file_filter = "CSV Files (*.csv)"
+        else:  # txt
+            file_filter = "Text Files (*.txt)"
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export System Information",
+            f"{default_name}.{format_type}",
+            file_filter,
+        )
+
+        if not file_path:
+            return  # User cancelled
+
+        try:
+            if format_type == "json":
+                self.export_to_json(file_path)
+            elif format_type == "csv":
+                self.export_to_csv(file_path)
+            else:  # txt
+                self.export_to_text(file_path)
+
+            QMessageBox.information(
+                self,
+                "Export Successful",
+                f"System information exported successfully to:\n{file_path}",
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Export Failed", f"Failed to export system information:\n{str(e)}"
+            )
+
+    def export_to_json(self, file_path):
+        with open(file_path, "w") as f:
+            json.dump(self.system_info, f, indent=4)
+
+    def export_to_csv(self, file_path):
+        with open(file_path, "w", newline="") as f:
+            writer = csv.writer(f)
+
+            writer.writerow(["Category", "Property", "Value"])
+
+            for category, properties in self.system_info.items():
+                for prop, value in properties.items():
+                    if isinstance(value, dict):
+                        for sub_prop, sub_value in value.items():
+                            writer.writerow([category, f"{prop}.{sub_prop}", sub_value])
+                    else:
+                        writer.writerow([category, prop, value])
+
+    def export_to_text(self, file_path):
+        with open(file_path, "w") as f:
+            for category, properties in self.system_info.items():
+                f.write(f"=== {category} ===\n")
+                for prop, value in properties.items():
+                    if isinstance(value, dict):
+                        for sub_prop, sub_value in value.items():
+                            f.write(f"{prop}.{sub_prop}: {sub_value}\n")
+                    else:
+                        f.write(f"{prop}: {value}\n")
+                f.write("\n")
 
     def load_system_info_async(self):
         self.is_info_loading = True
@@ -230,22 +335,25 @@ class SystemInfoDialog(QDialog):
 
     def on_info_loaded(self, system_info):
         gpu_info = SystemInfo.get_gpu_info()  # Fetch GPU info safely in main thread
-        system_info = {"GPU": gpu_info, **system_info}
+        system_info["GPU"] = gpu_info
+        self.system_info = dict(sorted(system_info.items(), key=lambda x: x[0].lower()))
 
-        info_widget = self.create_info_widget(system_info)
+        info_widget = self.create_info_widget(self.system_info)
         self.scroll_area.setWidget(info_widget)
 
         self.label.setText(
             f"{QCoreApplication.applicationName()} has detected the following hardware and software in your system:"
         )
         self.close_button.setEnabled(True)
+        self.export_button.setEnabled(True)
         self.is_info_loading = False
 
     def create_info_widget(self, system_info):
         scroll_content = QWidget()
         scroll_layout = QVBoxLayout(scroll_content)
 
-        categories = list(system_info.items())
+        categories = system_info.items()
+
         total_categories = len(categories)
 
         for index, (category, details) in enumerate(categories):
