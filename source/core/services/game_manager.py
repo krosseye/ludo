@@ -19,12 +19,14 @@ from core.models import Game
 from PySide6.QtCore import QObject
 
 from .game_database_manager import GameDatabaseManager
+from .process_manager import ProcessManager
 
 
 class GameManager(QObject):
     def __init__(self, db_manager: GameDatabaseManager):
         super().__init__()
         self._db_manager = db_manager
+        self.process_manager = ProcessManager()
 
     def mark_as_favourite(self, game_id: str, is_favourite: bool):
         """

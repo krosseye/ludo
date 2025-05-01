@@ -47,7 +47,7 @@ class GameEntryContextMenu(QMenu):
 
     def _create_play_button_action(self, game_info):
         """Create and add the Play button action."""
-        play_button = PlayButton(game_info)
+        play_button = PlayButton(game_info, self.game_list)
         play_button.clicked.connect(self.close)
 
         button_action = QWidgetAction(self)

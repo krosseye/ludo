@@ -149,7 +149,7 @@ class GameListWidget(QListWidget):
                 padding-left:4px;
                 }}
             GameListWidget::item:selected{{
-                border-left: 2px solid {highlight_color.name()};
+                border: 2px solid {highlight_color.name()};
             
                 }}
             GameListWidget::item:hover{{
