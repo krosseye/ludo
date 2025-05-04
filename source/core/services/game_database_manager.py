@@ -37,6 +37,7 @@ class GameDatabaseManager(QObject):
     game_favourited = Signal(str, bool)
     game_logo_position_changed = Signal(str, str)
     game_last_played_updated = Signal(str, str)
+    game_sessions_played_updated = Signal(str, int)
 
     CREATE_TABLE_QUERY = """
           CREATE TABLE IF NOT EXISTS games (
@@ -117,6 +118,10 @@ class GameDatabaseManager(QObject):
     UPDATE_LAST_PLAYED_QUERY = "UPDATE games SET lastPlayed = ? WHERE id = ?"
 
     UPDATE_LOGO_POSITION_QUERY = "UPDATE games SET logoPosition = ? WHERE id = ?"
+
+    INCREMENT_SESSIONS_PLAYED_QUERY = (
+        "UPDATE games SET sessionsPlayed = sessionsPlayed + 1 WHERE id = ?"
+    )
 
     def __init__(self, db_path=DB_PATH):
         super().__init__()
@@ -388,4 +393,28 @@ class GameDatabaseManager(QObject):
                 )
         except Exception as e:
             logger.exception(f"Failed to update lastPlayed for game (id={game_id}).")
+            raise
+
+    def increment_sessions_played(self, game_id: str):
+        try:
+            with self:
+                self._execute_query(self.INCREMENT_SESSIONS_PLAYED_QUERY, [game_id])
+
+                query = self._execute_query(
+                    "SELECT sessionsPlayed FROM games WHERE id = ?", [game_id]
+                )
+                if query.next():
+                    sessions_played = int(query.value(0))
+                    self.game_sessions_played_updated.emit(game_id, sessions_played)
+                    logger.info(
+                        f"Incremented sessionsPlayed for game (id={game_id}) to {sessions_played}"
+                    )
+                else:
+                    logger.warning(
+                        f"Could not retrieve sessionsPlayed after increment for game ID: {game_id}"
+                    )
+        except Exception as e:
+            logger.exception(
+                f"Failed to increment sessionsPlayed for game (id={game_id})."
+            )
             raise

@@ -38,6 +38,15 @@ class GameManager(QObject):
         """
         self._db_manager.mark_as_favourite(game_id, is_favourite)
 
+    def increment_sessions_played(self, game_id: str):
+        """
+        Increment the number of sessions played for a game.
+
+        Args:
+            game_id (str): The ID of the game to update.
+        """
+        self._db_manager.increment_sessions_played(game_id)
+
     def update_last_played(self, game_id: str, last_played: str):
         self._db_manager.update_last_played(game_id, last_played)
 
