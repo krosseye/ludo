@@ -15,14 +15,11 @@
 
 import csv
 import json
-import socket
-import urllib.request
+import os
 from datetime import datetime
 
-import cpuinfo
-import psutil
-from PySide6.QtCore import QCoreApplication, QObject, QSysInfo, QThread, Signal
-from PySide6.QtGui import QOffscreenSurface, QOpenGLContext
+from PySide6.QtCore import QCoreApplication, QObject, Qt, QThread, Signal
+from PySide6.QtGui import QMovie
 from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
@@ -35,6 +32,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from utilities.helpers.system_info import SystemInfo
 
 GL_VENDOR = 0x1F00
 GL_RENDERER = 0x1F01
@@ -52,145 +50,6 @@ class InfoWorker(QObject):
         self.finished.emit(info)
 
 
-class SystemInfo:
-    def get_system_info(self, include_gpu=True):
-        info = {
-            "Operating System": self.get_os_info(),
-            "Processor": self.get_cpu_info(),
-            "Memory": self.get_memory_info(),
-            "Storage": self.get_storage_info(),
-            "Network": self.get_network_info(),
-        }
-
-        if include_gpu:
-            info["GPU"] = self.get_gpu_info()
-
-        return info
-
-    @staticmethod
-    def get_cpu_info():
-        cpu = cpuinfo.get_cpu_info()
-        return {
-            "Vendor": cpu.get("vendor_id_raw", "Unknown"),
-            "Brand": cpu.get("brand_raw", "Unknown"),
-            "Speed": f"{psutil.cpu_freq().max:.2f} MHz",
-            "Cores": psutil.cpu_count(logical=False),
-            "Threads": psutil.cpu_count(logical=True),
-        }
-
-    @staticmethod
-    def get_gpu_info():
-        try:
-            surface = QOffscreenSurface()
-            surface.create()
-
-            context = QOpenGLContext()
-            context.create()
-            context.makeCurrent(surface)
-
-            functions = context.functions()
-            vendor = functions.glGetString(GL_VENDOR)
-            renderer = functions.glGetString(GL_RENDERER)
-
-            context.doneCurrent()
-            surface.destroy()
-
-            return {
-                "Vendor": vendor if vendor else "Unknown",
-                "Brand": renderer if renderer else "Unknown",
-            }
-        except Exception as e:
-            return {"Status": f"Failed to retrieve GPU info: {e}"}
-
-    def get_memory_info(self):
-        svmem = psutil.virtual_memory()
-        return {
-            "Total": self.get_size(svmem.total),
-            "In Use": self.get_size(svmem.used),
-            "Available": self.get_size(svmem.available),
-        }
-
-    def get_storage_info(self):
-        partitions = psutil.disk_partitions()
-        fixed_drives, removable_drives = 0, 0
-        fixed_drive_sizes, removable_drive_sizes = [], []
-
-        for partition in partitions:
-            try:
-                partition_usage = psutil.disk_usage(partition.mountpoint)
-                if "removable" in partition.opts.lower():
-                    removable_drives += 1
-                    removable_drive_sizes.append(partition_usage.total)
-                else:
-                    fixed_drives += 1
-                    fixed_drive_sizes.append(partition_usage.total)
-            except PermissionError:
-                continue
-
-        return {
-            "Number of Fixed Drives": fixed_drives,
-            "Fixed Drive Sizes": ", ".join(
-                [self.get_size(size) for size in fixed_drive_sizes]
-            ),
-            "Number of Removable Drives": removable_drives,
-            "Removable Drive Sizes": ", ".join(
-                [self.get_size(size) for size in removable_drive_sizes]
-            ),
-        }
-
-    @staticmethod
-    def get_os_info():
-        return {
-            "Platform": QSysInfo.prettyProductName(),
-            "Kernel": f"{QSysInfo.kernelType()} ({QSysInfo.kernelVersion()})",
-            "Architecture": QSysInfo.currentCpuArchitecture(),
-            "User": psutil.users()[0].name if psutil.users() else "Unknown",
-        }
-
-    def get_network_info(self):
-        try:
-            return {
-                "Host Name": QSysInfo.machineHostName(),
-                "Local IP Address": self.get_ip_address(),
-                "Public IP Address": self.get_public_ip(),
-            }
-        except Exception:
-            return {"Status": "Unable to retrieve network information"}
-
-    @staticmethod
-    def get_size(bytes, suffix="B"):
-        factor = 1024
-        for unit in ["", "K", "M", "G", "T", "P"]:
-            if bytes < factor:
-                return f"{bytes:.2f}{unit}{suffix}"
-            bytes /= factor
-        return f"{bytes:.2f}Y{suffix}"
-
-    @staticmethod
-    def get_ip_address():
-        try:
-            return socket.gethostbyname(socket.gethostname())
-        except Exception:
-            return "Unable to retrieve IP"
-
-    @staticmethod
-    def get_public_ip():
-        urls = [
-            "https://api64.ipify.org?format=text",
-            "https://checkip.amazonaws.com",
-            "https://ifconfig.me/ip",
-        ]
-        try:
-            with urllib.request.urlopen(urls[0]) as response:
-                if response.status == 200:
-                    response_data = response.read().decode("utf-8")
-                    return response_data
-                else:
-                    return "Unable to retrieve public IP"
-        except Exception as e:
-            return f"Unable to retrieve public IP: {e}"
-
-
 class SystemInfoDialog(QDialog):
     def __init__(self):
         super().__init__()
@@ -202,13 +61,28 @@ class SystemInfoDialog(QDialog):
         self.system_info = None
 
         self.layout.addWidget(QLabel("<h1>System Information</h1>", self))
+
         self.label = QLabel(
             f"{QCoreApplication.applicationName()} is gathering system info..."
         )
         self.layout.addWidget(self.label)
 
+        self.spinner_label = QLabel(self)
+        _loading_graphic_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "resources",
+            "icons",
+            "raster",
+            "loading.gif",
+        )
+        self.spinner_movie = QMovie(_loading_graphic_path)
+        self.spinner_movie.finished.connect(lambda: self.spinner_movie.start())
+        self.spinner_label.setMovie(self.spinner_movie)
+        self.layout.addWidget(self.spinner_label, alignment=Qt.AlignCenter, stretch=1)
+
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setVisible(False)
         self.layout.addWidget(self.scroll_area)
 
         self.export_button = QPushButton("Export...", self)
@@ -226,6 +100,7 @@ class SystemInfoDialog(QDialog):
         button_layout.addWidget(self.close_button)
         self.layout.addLayout(button_layout)
 
+        self.spinner_movie.start()
         self.load_system_info_async()
 
     def show_export_options(self):
@@ -347,6 +222,10 @@ class SystemInfoDialog(QDialog):
         self.close_button.setEnabled(True)
         self.export_button.setEnabled(True)
         self.is_info_loading = False
+
+        self.scroll_area.setVisible(True)
+        self.spinner_movie.stop()
+        self.spinner_label.hide()
 
     def create_info_widget(self, system_info):
         scroll_content = QWidget()
