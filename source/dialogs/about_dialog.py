@@ -95,15 +95,22 @@ class AboutDialog(QDialog):
             <p><strong>{self.app_title}</strong> is a universal game launcher designed to unify all your gaming platforms into a single, seamless experience.</p>
             <p>Built with <strong>PySide6/Qt</strong>, {self.app_title} offers a fast, native desktop experience with a customizable interface.</p>
             <p>You are currently using version <strong>{self.version}</strong>.</p>
-    
+            
             <h2>Important Notice</h2>
             <p><em>{self.app_title} is under active development. All features, design, and functionality are subject to change as the project evolves.</em></p>
-            <p>For more information and to access the source code, visit the project's <a href="{self.domain}">GitHub repository</a>.</p>
-    
-            <h2>License</h2>
-            <p>This project is distributed under the 
-            <a href="https://www.mozilla.org/en-US/MPL/2.0/">Mozilla Public License (MPL v2.0)</a>.</p>
-            <footer>Copyright © 2025, {self.developer}.</footer>
+            <p>For more information and to access the source code, visit the project's <a href="{self.domain}" rel="noopener noreferrer">GitHub repository</a>.</p>
+            
+            <h2>Licensing</h2>
+            <p>This project is distributed under the <a href="https://www.mozilla.org/en-US/MPL/2.0/" rel="noopener noreferrer">Mozilla Public License (MPL v2.0)</a>.</p>
+
+            <h2>Third-Party Components</h2>
+            <ul>
+                <li><strong>PySide6 (Qt for Python)</strong> – Licensed under <a href="https://www.gnu.org/licenses/lgpl-3.0.html" rel="noopener noreferrer">LGPL v3</a>.</li>
+                <li><strong>Microsoft Fluent Icons</strong> – Licensed under <a href="https://mit-license.org/" rel="noopener noreferrer">MIT</a>.</li>
+                <li><strong>Loading Animation</strong> – Created via <a href="https://loading.io" rel="noopener noreferrer">loading.io</a> (free license).</li>
+            </ul>
+            
+            <footer>Copyright &copy; 2025 {self.developer} and other contributors. All rights reserved.</footer>
         """
 
         return html_content
