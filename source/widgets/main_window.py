@@ -20,7 +20,7 @@ import subprocess
 import webbrowser
 
 from core.app_config import app_config
-from core.services import GameDatabaseManager, GameListManager
+from core.services import GameDatabaseManager, GameListManager, GameManager
 from dialogs.about_dialog import AboutDialog
 from dialogs.GameEntryDialog import GameEntryDialog
 from dialogs.settings_dialog import SettingsDialog
@@ -53,7 +53,8 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.database = GameDatabaseManager()
-        self.game_list = GameListManager(self.database)
+        self.game_manager = GameManager(self.database)
+        self.game_list = GameListManager(self.database, self.game_manager)
         self.app_title = CONFIG.APP_TITLE
         self._set_title(self.game_list.selected_game)
 

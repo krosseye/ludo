@@ -26,8 +26,6 @@ from core.models import Game
 from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, Signal
 from PySide6.QtGui import QIcon
 
-from .game_manager import GameManager
-
 CONFIG = app_config
 GAMES_DIRECTORY = os.path.join(CONFIG.USER_DATA_PATH, "games")
 
@@ -37,10 +35,10 @@ logger = logging.getLogger("GameListManager")
 class GameListManager(QAbstractListModel):
     game_selected = Signal(str)
 
-    def __init__(self, game_db_manager) -> None:
+    def __init__(self, game_db_manager, game_manager) -> None:
         super().__init__()
         self._game_db_manager = game_db_manager
-        self.game_manager = GameManager(self._game_db_manager)
+        self.game_manager = game_manager
         self._games: list[Game] = []
         self._current_sort_order = Qt.AscendingOrder
         self._selected_game_id: Optional[str] = None
@@ -54,6 +52,9 @@ class GameListManager(QAbstractListModel):
         self._game_db_manager.game_updated.connect(self._on_game_updated)
         self._game_db_manager.game_last_played_updated.connect(
             self._on_last_played_updated
+        )
+        self._game_db_manager.game_sessions_played_updated.connect(
+            self._on_sessions_played_updated
         )
         self._game_db_manager.game_logo_position_changed.connect(
             self._on_logo_position_updated
@@ -296,6 +297,28 @@ class GameListManager(QAbstractListModel):
         except Exception as e:
             logger.error(
                 f"Error changing logo position for game ID {game_id}: {str(e)}"
+            )
+
+    def _on_sessions_played_updated(self, game_id: str, sessions_played: int) -> None:
+        """
+        Handle updates to a game's sessions played value.
+
+        Args:
+            game_id (str): The ID of the game being updated.
+            sessions_played (int): The new sessions played value.
+        """
+        try:
+            for row, game in enumerate(self._games):
+                if game.id == game_id:
+                    game.sessionsPlayed = sessions_played
+                    self.dataChanged.emit(self.index(row), self.index(row))
+                    logger.debug(
+                        f"Game sessions played value changed (id={game_id}, sessions_played={sessions_played})"
+                    )
+                    break
+        except Exception as e:
+            logger.error(
+                f"Error changing sessions played value for game ID {game_id}: {str(e)}"
             )
 
     def rowCount(self, parent=QModelIndex()) -> int:
