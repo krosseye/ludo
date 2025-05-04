@@ -5,6 +5,7 @@ from core.constants import (
     DEFAULT_USER_CONFIG,
     GRID_STYLE_OPTIONS,
     LIST_STYLE_OPTIONS,
+    THEME_OPTIONS,
 )
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -18,7 +19,6 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QSpinBox,
-    QStyleFactory,
     QVBoxLayout,
     QWidget,
 )
@@ -43,9 +43,7 @@ class SettingsDialog(QDialog):
 
     def build_ui(self):
         # Comboboxes
-        available_styles = QStyleFactory.keys()
-        available_styles.insert(0, "auto")
-        self._add_combobox("THEME", available_styles)
+        self._add_combobox("THEME", THEME_OPTIONS)
         self._add_spinbox("BASE_FONT_SIZE", min_=6, max_=24)
         self._add_combobox("COLLECTION_STYLE", COLLECTION_STYLE_OPTIONS)
         self._add_combobox("LIST_STYLE", LIST_STYLE_OPTIONS)
@@ -55,8 +53,6 @@ class SettingsDialog(QDialog):
         for key in [
             "STEAM_FRIENDS_ENABLED",
             "ALTERNATE_LIST_ROW_COLORS",
-            "SORT_BY_RECENTLY_PLAYED",
-            "SORT_FAVOURITES_FIRST",
         ]:
             self._add_checkbox(key)
 

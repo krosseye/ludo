@@ -76,9 +76,13 @@ class GameCollectionWidget(QFrame):
     def _create_sorting_checkboxes(self):
         def _sort_by_recent(state):
             self.game_list_manager.sort_by_recent = state
+            user_config["SORT_BY_RECENTLY_PLAYED"] = state
+            user_config.save()
 
         def _toggle_favourites_first(state):
             self.game_list_manager.group_favourites = state
+            user_config["SORT_FAVOURITES_FIRST"] = state
+            user_config.save()
 
         self.sort_by_recent_checkbox = LabeledSpritesheetCheckBox(
             "Recently Played",

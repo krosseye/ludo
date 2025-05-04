@@ -16,11 +16,21 @@
 import json
 from typing import Any, Dict
 
+from utilities.helpers import load_json
+
 from ..constants import DEFAULT_USER_CONFIG
 
 
 class UserConfig:
-    def __init__(self):
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialize()
+        return cls._instance
+
+    def _initialize(self):
         self.default_config = DEFAULT_USER_CONFIG
         self.config_path = None
         self.user_config = None
@@ -34,10 +44,12 @@ class UserConfig:
 
     def _load_user_config(self) -> Dict[str, Any]:
         """Load user config if exists, otherwise return empty dict"""
-        if self.config_path.exists():
-            with open(self.config_path, "r") as f:
-                return json.load(f)
-        return {}
+        try:
+            return load_json(self.config_path)
+        except FileNotFoundError:
+            return {}
+        except json.JSONDecodeError:
+            return {}
 
     def get(self, key: str) -> Any:
         """Get a config value, falling back to default if not in user config"""
