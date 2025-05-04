@@ -22,13 +22,13 @@ from core.app_config import app_config
 from core.plugins.runners import DefaultRunner
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QMessageBox
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QMessageBox, QPushButton
 
 CONFIG = app_config
 PREFERS_DARK_MODE = CONFIG.PREFERS_DARK_MODE
 
 
-class PlayButton(QFrame):
+class PlayButton(QPushButton):
     clicked = Signal(str)
 
     def __init__(self, game_info=None, game_list_manager=None):
@@ -42,34 +42,31 @@ class PlayButton(QFrame):
         self._game_list_manager = game_list_manager
         self._runner = None
 
+        icon_theme = "dark" if PREFERS_DARK_MODE else "light"
         self._play_icon = QIcon(
-            os.path.join(CONFIG.RESOURCE_PATH, "icons", "dark", "filled", "play.png")
+            os.path.join(
+                CONFIG.RESOURCE_PATH, "icons", icon_theme, "filled", "play.png"
+            )
         ).pixmap(QSize(24, 24))
 
         self._dismiss_icon = QIcon(
-            os.path.join(CONFIG.RESOURCE_PATH, "icons", "dark", "dismiss.png")
+            os.path.join(CONFIG.RESOURCE_PATH, "icons", icon_theme, "dismiss.png")
         ).pixmap(QSize(24, 24))
 
         layout = QHBoxLayout()
+        layout.setContentsMargins(10, 0, 10, 0)
+        layout.setSpacing(5)
+
         self.icon_label = QLabel()
-        self.label = QLabel()
+        self.text_label = QLabel()
+        self.text_label.setAlignment(Qt.AlignCenter)
 
         layout.addStretch()
         layout.addWidget(self.icon_label)
-        layout.addWidget(self.label)
+        layout.addWidget(self.text_label)
         layout.addStretch()
 
         self.setLayout(layout)
-
-        prefers_dark = PREFERS_DARK_MODE
-        palette = self.palette()
-        self._border_color = (
-            palette.midlight().color().name()
-            if prefers_dark
-            else palette.mid().color().name()
-        )
-        self.button_color = palette.button().color().name()
-        self.highlighted_button_color = palette.highlight().color().name()
 
         self.update_game_info(game_info)
 
@@ -80,54 +77,48 @@ class PlayButton(QFrame):
         return bool(game_info.executablePath or game_info.launchOptions)
 
     def _update_state(self, enabled, running):
-        """Update the button's appearance based on the state."""
         play_mode = enabled and not running
         stop_mode = enabled and running and self._runner and self._runner.can_stop()
 
+        self.setEnabled(enabled)
+        self.setCursor(Qt.PointingHandCursor if enabled else Qt.ForbiddenCursor)
+
         if stop_mode:
-            icon, text, tooltip, bg_color = (
-                self._dismiss_icon,
-                "Stop",
-                f"Stop {self.title}.",
-                "red",
-            )
+            self.icon_label.setPixmap(self._dismiss_icon)
+            self.text_label.setText("Stop")
+            self.setToolTip(f"Stop {self.title}.")
+            self.setProperty("buttonType", "stop")
         elif play_mode:
-            icon, text, tooltip, bg_color = (
-                self._play_icon,
-                "Play",
-                f"Play {self.title}.",
-                self.highlighted_button_color,
-            )
+            self.icon_label.setPixmap(self._play_icon)
+            self.text_label.setText("Play")
+            self.setToolTip(f"Play {self.title}.")
+            self.setProperty("buttonType", "play")
         else:
-            icon, text, tooltip, bg_color = (
-                QPixmap(),
-                "Play",
-                f"{self.title} is not ready.",
-                self.button_color,
-            )
+            self.icon_label.setPixmap(QPixmap())
+            self.text_label.setText("Play")
+            self.setToolTip(f"{self.title} is not ready.")
+            self.setProperty("buttonType", "disabled")
 
-        self.icon_label.setPixmap(icon)
-        self.icon_label.setVisible(bool(icon))
-        self.label.setText(text)
-        self.setCursor(
-            Qt.PointingHandCursor if play_mode or stop_mode else Qt.ArrowCursor
-        )
-        self.setToolTip(tooltip)
-
-        text_color = (
-            "white" if play_mode or stop_mode else self.palette().text().color().name()
-        )
-        self.setStyleSheet(f"""
-            QFrame#PlayButton {{
-                background-color: {bg_color};
-                border: 1px solid {self._border_color};
-                border-radius: 5px;
-            }}
-            QFrame#PlayButton QLabel {{
-                font-weight:bold;
-                color: {text_color};
-                background-color: transparent;
-            }}
+        self.setStyleSheet("""
+            QPushButton[buttonType="stop"] QLabel,
+            QPushButton[buttonType="play"] QLabel {
+                font-weight: bold;
+            }
+            
+            QPushButton[buttonType="stop"] {
+                background-color: red;
+                color: white;
+            }
+            
+            QPushButton[buttonType="play"] {
+                background-color: palette(highlight);
+                color: white;
+            }
+            
+            QPushButton[buttonType="disabled"] {
+                background-color: palette(button);
+                color: palette(text);
+            }
         """)
 
     def update_game_info(self, game_info):
@@ -174,6 +165,7 @@ class PlayButton(QFrame):
 
     def mousePressEvent(self, event):
         self.clicked.emit(self.game_id)
+        super().mousePressEvent(event)
 
         if not self.game_info or not self._can_run(self.game_info):
             return
@@ -182,9 +174,12 @@ class PlayButton(QFrame):
             self._runner.stop_game()
         else:
             try:
-                # Update last played time
+                # Update last played time and increment sessions played
                 self._game_list_manager.game_manager.update_last_played(
                     self.game_id, datetime.now()
+                )
+                self._game_list_manager.game_manager.increment_sessions_played(
+                    self.game_id
                 )
 
                 if not self._runner:
